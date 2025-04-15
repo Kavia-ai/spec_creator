@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kavia Swagger View</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui.css" />
+  <style>
+    :root {
+      --primary-color: #3b82f6;
+      --primary-dark: #2563eb;
+      --secondary-color: #1e293b;
+      --text-color: #1e293b;
+      --light-gray: #f8fafc;
+      --border-color: #e2e8f0;
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-main);
+      color: var(--text-color);
+      background-color: var(--light-gray);
+      line-height: 1.5;
+    }
+    
+    header {
+      background-color: white;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      padding: 1rem 0;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--secondary-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--primary-color);
+    }
+    
+    .input-form {
+      background-color: white;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--secondary-color);
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      .input-group {
+        flex-direction: column;
+      }
+    }
+    
+    #file-path {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      font-family: var(--font-main);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s ease-in-out;
+    }
+    
+    #file-path:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    #load-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out;
+      min-width: 120px;
+    }
+    
+    #load-button:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .selector-container {
+      margin-bottom: 1.5rem;
+    }
+    
+    #api-selector {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      font-family: var(--font-main);
+      font-size: 1rem;
+      outline: none;
+      background-color: white;
+      transition: border-color 0.15s ease-in-out;
+    }
+    
+    #api-selector:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    .examples {
+      margin-top: 0.5rem;
+    }
+    
+    .example-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--secondary-color);
+    }
+    
+    .example-path {
+      background-color: var(--light-gray);
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      user-select: all;
+    }
+    
+    .example-path:hover {
+      background-color: #eef2ff;
+    }
+    
+    .notification {
+      padding: 1rem;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    
+    .notification.error {
+      background-color: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+    
+    .notification.success {
+      background-color: #dcfce7;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+    }
+    
+    .swagger-ui .topbar {
+      background-color: var(--secondary-color);
+    }
+    
+    .swagger-ui .info {
+      margin: 30px 0;
+    }
+    
+    /* Fix for Swagger UI rendering */
+    .swagger-container {
+      margin-top: 1rem;
+      background: white;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      min-height: 500px; /* Ensure minimum height */
+    }
+    
+    /* Ensure Swagger UI content is visible */
+    .swagger-ui {
+      min-height: 500px;
+      height: auto !important;
+      display: block !important;
+      visibility: visible !important;
+    }
+    
+    /* Hide Swagger Topbar */
+    .swagger-ui .topbar {
+      background-color: var(--secondary-color);
+      display: none; /* Hide default topbar */
+    }
+    
+    /* Loading indicator */
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+    
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(59, 130, 246, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-color);
+    }
+
+    .dark-mode-icon, .light-mode-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .dark-mode-icon {
+      display: block;
+    }
+
+    .light-mode-icon {
+      display: none;
+    }
+
+    /* Dark mode styles */
+    body.dark-mode {
+      --primary-color: #60a5fa;
+      --primary-dark: #3b82f6;
+      --secondary-color: #e2e8f0;
+      --text-color: #e2e8f0;
+      --light-gray: #1e293b;
+      --border-color: #334155;
+      background-color: #0f172a;
+    }
+
+    body.dark-mode header {
+      background-color: #1e293b;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    body.dark-mode .logo {
+      color: white;
+    }
+
+    body.dark-mode .input-form {
+      background-color: #1e293b;
+    }
+
+    body.dark-mode #file-path,
+    body.dark-mode #api-selector {
+      background-color: #0f172a;
+      color: white;
+      border-color: #334155;
+    }
+
+    body.dark-mode .example-path {
+      background-color: #0f172a;
+      color: #e2e8f0;
+    }
+
+    body.dark-mode .example-path:hover {
+      background-color: #1e293b;
+    }
+
+    body.dark-mode .swagger-container {
+      background-color: #1e293b;
+    }
+
+    body.dark-mode .dark-mode-icon {
+      display: none;
+    }
+
+    body.dark-mode .light-mode-icon {
+      display: block;
+    }
+
+    body.dark-mode .theme-toggle {
+      color: white;
+    }
+
+    .api-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      margin-left: 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .api-badge.java {
+      background-color: #f59e0b;
+      color: white;
+    }
+
+    .api-badge.javascript {
+      background-color: #10b981;
+      color: white;
+    }
+
+    .api-badge.python {
+      background-color: #3b82f6;
+      color: white;
+    }
+
+    .api-badge.ruby {
+      background-color: #ef4444;
+      color: white;
+    }
+
+    .selector-container {
+      margin-bottom: 1rem;
+    }
+
+    .manual-input-toggle {
+      font-size: 0.875rem;
+      color: var(--primary-color);
+      text-decoration: underline;
+      cursor: pointer;
+      display: block;
+      margin-top: 0.5rem;
+    }
+
+    .manual-input-container {
+      margin-top: 1rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <img src="kavia_logo.svg" alt="Kavia Logo" height="32">
+          <span>Kavia Swagger View</span>
+        </div>
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="dark-mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="light-mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  
+  <main class="container">
+    <div class="input-form">
+      <div class="notification" id="notification"></div>
+      
+      <h2 class="form-title">Select OpenAPI Specification</h2>
+      
+      <div class="selector-container">
+        <select id="api-selector">
+          <option value="" disabled selected>Loading API specifications...</option>
+        </select>
+      </div>
+      
+      <div class="manual-input-container" id="manual-input-container">
+        <div class="input-group">
+          <input type="text" id="file-path" placeholder="Enter full path to your OpenAPI file (e.g., /path/to/openapi.json)" />
+          <button id="load-button">Load Spec</button>
+        </div>
+      </div>
+      
+      <a class="manual-input-toggle" id="manual-input-toggle">Switch to manual input</a>
+      
+      <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <span>Loading specification...</span>
+      </div>
+    </div>
+    
+    <div class="swagger-container" id="swagger-container">
+      <div id="swagger-ui"></div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui-bundle.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui-standalone-preset.js"></script>
+  <script>
+    // Global variable to store config data
+    let configData = [];
+    
+    // Function to get URL parameters
+    function getUrlParameter(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+    
+    // Function to show notification
+    function showNotification(message, type) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = 'notification ' + type;
+      notification.style.display = 'block';
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Function to get a language badge
+    function getLanguageBadge(language) {
+      if (!language) return '';
+      return `<span class="api-badge ${language.toLowerCase()}">${language}</span>`;
+    }
+    
+    // Function to load the configuration file
+    async function loadConfig() {
+      try {
+        document.getElementById('loading').style.display = 'flex';
+        
+        const response = await fetch('/config');
+        if (!response.ok) {
+          throw new Error(`Failed to load configuration: ${response.status} ${response.statusText}`);
+        }
+        
+        configData = await response.json();
+        console.log('Loaded config data:', configData);
+        
+        // Populate the selector
+        const selector = document.getElementById('api-selector');
+        selector.innerHTML = '';
+        
+        // Add a default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.text = 'Select an API specification';
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        selector.appendChild(defaultOption);
+        
+        // Add options for each API with openapi_path
+        let hasValidPaths = false;
+        let firstValidPath = null;
+        
+        configData.forEach((item, index) => {
+          if (item.openapi_path) {
+            hasValidPaths = true;
+            if (!firstValidPath) {
+              firstValidPath = item.openapi_path;
+            }
+            
+            const option = document.createElement('option');
+            option.value = item.openapi_path;
+            option.text = `${item.framework} (${item.language})`;
+            option.setAttribute('data-index', index);
+            selector.appendChild(option);
+            console.log(`Added option: ${option.text} with path: ${option.value}`);
+          }
+        });
+        
+        // If no APIs with openapi_path are found
+        if (!hasValidPaths) {
+          defaultOption.text = 'No API specifications found in config';
+          showNotification('No API specifications found in the configuration file. Please use manual input.', 'error');
+          toggleManualInput(true);
+        } else {
+          // Check if there's a path parameter in the URL
+          const urlPath = getUrlParameter('path');
+          if (urlPath) {
+            // If we have a URL parameter, use that
+            toggleManualInput(true);
+            loadSpec(urlPath);
+          } else if (firstValidPath) {
+            // Otherwise, auto-load the first valid API
+            selector.value = firstValidPath;
+            loadSpec(firstValidPath);
+          }
+        }
+        
+        document.getElementById('loading').style.display = 'none';
+      } catch (error) {
+        console.error('Error loading configuration:', error);
+        showNotification(`Error loading configuration: ${error.message}`, 'error');
+        document.getElementById('loading').style.display = 'none';
+        toggleManualInput(true);
+      }
+    }
+    
+    // Function to toggle between selector and manual input
+    function toggleManualInput(forceShow) {
+      const manualContainer = document.getElementById('manual-input-container');
+      const toggleLink = document.getElementById('manual-input-toggle');
+      const selectorContainer = document.querySelector('.selector-container');
+      
+      if (forceShow || manualContainer.style.display === 'none' || !manualContainer.style.display) {
+        manualContainer.style.display = 'block';
+        selectorContainer.style.display = 'none';
+        toggleLink.textContent = 'Switch to API selector';
+      } else {
+        manualContainer.style.display = 'none';
+        selectorContainer.style.display = 'block';
+        toggleLink.textContent = 'Switch to manual input';
+      }
+    }
+    
+    // Function to load the OpenAPI specification
+    function loadSpec(filePath) {
+      if (!filePath) {
+        console.error('No file path provided to loadSpec');
+        return;
+      }
+      
+      console.log('Loading specification from path:', filePath);
+      
+      // Update the input field if it exists
+      const filePathInput = document.getElementById('file-path');
+      if (filePathInput) {
+        filePathInput.value = filePath;
+      }
+      
+      // Show loading indicator
+      document.getElementById('loading').style.display = 'flex';
+      
+      // Create the URL with encoded path
+      const specUrl = `/spec?path=${encodeURIComponent(filePath)}`;
+      console.log('Fetching specification from:', specUrl);
+      
+      // Re-create the swagger container to avoid any lingering state issues
+      const swaggerContainer = document.getElementById('swagger-container');
+      swaggerContainer.innerHTML = '<div id="swagger-ui"></div>';
+      
+      // Force a small delay to ensure the DOM is properly reset
+      setTimeout(() => {
+        try {
+          // Initialize Swagger UI
+          const ui = SwaggerUIBundle({
+            url: specUrl,
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+              SwaggerUIBundle.presets.apis,
+              SwaggerUIStandalonePreset
+            ],
+            plugins: [
+              SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout",
+            docExpansion: "list",
+            defaultModelsExpandDepth: 1,
+            displayRequestDuration: true,
+            filter: true,
+            syntaxHighlight: {
+              activate: true,
+              theme: "agate"
+            },
+            onComplete: function() {
+              // Hide loading indicator
+              document.getElementById('loading').style.display = 'none';
+              console.log('Swagger UI initialization complete');
+            },
+            requestInterceptor: function(req) {
+              console.log('Swagger UI request:', req);
+              return req;
+            },
+            responseInterceptor: function(response) {
+              console.log('Swagger UI response status:', response.status);
+              
+              if (response.status >= 400) {
+                document.getElementById('loading').style.display = 'none';
+                
+                // Parse the error message if it's JSON
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                  response.json().then(data => {
+                    console.error('Error response data:', data);
+                    showNotification(data.error || 'Error loading specification', 'error');
+                  }).catch(err => {
+                    console.error('Error parsing JSON response:', err);
+                    showNotification(`Error loading specification: ${response.status} ${response.statusText}`, 'error');
+                  });
+                } else {
+                  showNotification(`Error loading specification: ${response.status} ${response.statusText}`, 'error');
+                }
+              } else {
+                showNotification('OpenAPI specification loaded successfully!', 'success');
+              }
+              return response;
+            }
+          });
+          
+          // Store UI instance for potential reuse
+          window.swaggerUi = ui;
+        } catch (error) {
+          console.error('Error initializing Swagger UI:', error);
+          showNotification(`Error initializing Swagger UI: ${error.message}`, 'error');
+          document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Update URL
+        const newUrl = window.location.pathname + "?path=" + encodeURIComponent(filePath);
+        window.history.pushState({ path: newUrl }, '', newUrl);
+      }, 100); // Small delay to ensure DOM is ready
+    }
+    
+    // Theme toggle functionality
+    function setupThemeToggle() {
+      const themeToggle = document.getElementById('theme-toggle');
+      const savedTheme = localStorage.getItem('theme');
+      
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+      
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+      });
+    }
+    
+    // When the page loads
+    window.onload = function() {
+      setupThemeToggle();
+      
+      // Load the configuration file
+      loadConfig();
+      
+      // API selector change event
+      document.getElementById('api-selector').addEventListener('change', function() {
+        const filePath = this.value;
+        console.log('Selected API path:', filePath);
+        if (filePath) {
+          loadSpec(filePath);
+        }
+      });
+      
+      // Toggle between selector and manual input
+      document.getElementById('manual-input-toggle').addEventListener('click', function() {
+        toggleManualInput();
+      });
+      
+      // When the load button is clicked
+      document.getElementById('load-button').addEventListener('click', function() {
+        const filePath = document.getElementById('file-path').value.trim();
+        if (!filePath) {
+          showNotification('Please enter a file path', 'error');
+          return;
+        }
+        loadSpec(filePath);
+      });
+      
+      // Allow pressing Enter in the input field
+      document.getElementById('file-path').addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+          const filePath = document.getElementById('file-path').value.trim();
+          if (!filePath) {
+            showNotification('Please enter a file path', 'error');
+            return;
+          }
+          loadSpec(filePath);
+        }
+      });
+    };
+  </script>
+</body>
+</html>

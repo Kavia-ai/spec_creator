@@ -1,0 +1,75 @@
+<h1>Products</h1>
+
+<!-- Filter Form -->
+<%= form_tag products_path, method: :get do %>
+  <div>
+    <%= label_tag :category, "Category:" %>
+    <%= select_tag :category, options_for_select(["Electronics", "Kitchen", "Furniture"], params[:category]), include_blank: "All Categories" %>
+  </div>
+
+  <div>
+    <%= label_tag :min_price, "Min Price:" %>
+    <%= number_field_tag :min_price, params[:min_price], step: 0.01 %>
+  </div>
+
+  <div>
+    <%= label_tag :max_price, "Max Price:" %>
+    <%= number_field_tag :max_price, params[:max_price], step: 0.01 %>
+  </div>
+
+  <div>
+    <%= label_tag :in_stock, "In Stock:" %>
+    <%= select_tag :in_stock, options_for_select([["Yes", "true"], ["No", "false"]], params[:in_stock]), include_blank: "All" %>
+  </div>
+
+  <div>
+    <%= label_tag :sort, "Sort by:" %>
+    <%= select_tag :sort, options_for_select([["Price: Low to High", "price_asc"], ["Price: High to Low", "price_desc"]], params[:sort]), include_blank: "Default" %>
+  </div>
+
+  <%= submit_tag "Filter" %>
+<% end %>
+
+<!-- Products Table -->
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Category</th>
+      <th>In Stock</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @products.each do |product| %>
+      <tr>
+        <td><%= product[:name] %></td>
+        <td>$<%= number_with_precision(product[:price], precision: 2) %></td>
+        <td><%= product[:category] %></td>
+        <td><%= product[:in_stock] ? "Yes" : "No" %></td>
+        <td>
+          <%= link_to "Show", product_path(product[:id]) %> |
+          <%= link_to "Edit", edit_product_path(product[:id]) %> |
+          <%= link_to "Delete", product_path(product[:id]), method: :delete, data: { confirm: "Are you sure?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<!-- Pagination -->
+<div class="pagination">
+  <% if @page > 1 %>
+    <%= link_to "Previous", products_path(page: @page - 1, category: params[:category], min_price: params[:min_price], max_price: params[:max_price], in_stock: params[:in_stock], sort: params[:sort]) %>
+  <% end %>
+
+  Page <%= @page %> of <%= @total_pages %>
+
+  <% if @page < @total_pages %>
+    <%= link_to "Next", products_path(page: @page + 1, category: params[:category], min_price: params[:min_price], max_price: params[:max_price], in_stock: params[:in_stock], sort: params[:sort]) %>
+  <% end %>
+</div>
+
+<!-- New Product Link -->
+<p><%= link_to "New Product", new_product_path %></p>
