@@ -1,0 +1,8 @@
+{
+  "spec_creator":{
+    "spring": null,
+    "express.js": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/specs/creator/openapi_spec_creator.js",
+    "flask": "creator/openapi_spec_creator.py",
+    "ruby-on-rails": "creator/openapi_spec_creator.rb"
+  }
+}
