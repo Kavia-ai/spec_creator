@@ -1159,11 +1159,31 @@
     // Global variable to store config data
     let configData = [];
     let currentConfigIndex = -1;
+    let currentBasePath = '';
     
     // Function to get URL parameters
     function getUrlParameter(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
+    }
+    
+    // Function to append basePath to URLs
+    function appendBasePath(url) {
+      // If the URL already has a basePath parameter, return it as is
+      if (url.includes('basePath=')) {
+        return url;
+      }
+      
+      // Get the current basePath
+      const basePath = getUrlParameter('basePath') || currentBasePath;
+      
+      if (!basePath) {
+        return url;
+      }
+      
+      // Append the basePath parameter
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}basePath=${encodeURIComponent(basePath)}`;
     }
     
     // Function to show notification
@@ -1193,6 +1213,7 @@
         
         // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
+        currentBasePath = basePath; // Store for future use
         
         if (!basePath) {
           throw new Error('No basePath provided in URL. Use ?basePath=/path/to/source');
@@ -1276,8 +1297,8 @@
           throw new Error('No basePath provided in URL');
         }
         
-        // Create a direct URL to the view endpoint
-        const viewUrl = `/view?path=${encodeURIComponent(path)}&basePath=${encodeURIComponent(basePath)}`;
+        // Create a direct URL to the view endpoint with basePath
+        const viewUrl = appendBasePath(`/view?path=${encodeURIComponent(path)}`);
         
         // Create an iframe with the src set to the view URL
         const iframe = document.createElement('iframe');
@@ -1292,7 +1313,7 @@
         iframeContainer.appendChild(iframe);
         
         document.getElementById('loading-spec').style.display = 'none';
-        } catch (error) {
+      } catch (error) {
         console.error('Error loading spec:', error);
         document.getElementById('loading-spec').style.display = 'none';
         showError(`Failed to load OpenAPI specification. ${error.message}`);
@@ -1404,7 +1425,8 @@
           throw new Error('No basePath provided in URL');
         }
         
-        const response = await fetch(`/run-framework-detector?basePath=${encodeURIComponent(basePath)}`, {
+        const url = appendBasePath('/run-framework-detector');
+        const response = await fetch(url, {
           method: 'POST'
         });
         
@@ -1439,7 +1461,8 @@
           throw new Error('No basePath provided in URL');
         }
         
-        const response = await fetch(`/run-openapi-builder?basePath=${encodeURIComponent(basePath)}`, {
+        const url = appendBasePath('/run-openapi-builder');
+        const response = await fetch(url, {
           method: 'POST'
         });
         
@@ -1559,7 +1582,9 @@
           throw new Error('No basePath provided in URL');
         }
         
-        const response = await fetch(`/update-config?basePath=${encodeURIComponent(basePath)}`, {
+        const url = appendBasePath('/update-config');
+        
+        const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

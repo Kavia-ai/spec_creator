@@ -12,6 +12,42 @@ const url = require('url');
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
+// Middleware to extract basePath from Referer header if not provided in query
+app.use((req, res, next) => {
+  // If basePath is already in the query parameters, use that
+  if (req.query.basePath) {
+    return next();
+  }
+
+  // Try to extract from the Referer header
+  const referer = req.headers.referer;
+  if (referer) {
+    try {
+      const parsedUrl = new URL(referer);
+      const basePathFromReferer = parsedUrl.searchParams.get('basePath');
+      if (basePathFromReferer) {
+        // Add the basePath to the query object
+        req.query.basePath = basePathFromReferer;
+        console.log(`Extracted basePath from Referer: ${basePathFromReferer}`);
+        return next();
+      }
+    } catch (error) {
+      console.error('Error parsing Referer URL:', error);
+    }
+  }
+
+  // Try to extract from the original URL path if it's in the format /:basePath/...
+  const pathMatch = req.originalUrl.match(/^\/(\/[^\/]+(?:\/[^\/]+)*)\//);
+  if (pathMatch && pathMatch[1]) {
+    req.query.basePath = pathMatch[1];
+    console.log(`Extracted basePath from URL path: ${req.query.basePath}`);
+    return next();
+  }
+
+  // Continue without modifying the request
+  next();
+});
+
 // Serve the Swagger UI from swagger-ui-dist
 app.use(express.static(path.join(__dirname, 'public')));
 
