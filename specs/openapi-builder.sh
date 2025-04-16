@@ -169,41 +169,168 @@ process_framework() {
         ;;
       "express.js")
         # For express.js, use node_modules if available
-        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
-          echo "Using Node.js packages from: $venv_path"
-          export PATH="$venv_path/.bin:$PATH"
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ]; then
+          if [ -d "$venv_path" ]; then
+            echo "Using Node.js packages from: $venv_path"
+            export PATH="$venv_path/.bin:$PATH"
+            
+            # Add node_modules to NODE_PATH if it exists
+            if [ -d "$venv_path" ]; then
+              if [ -z "$NODE_PATH" ]; then
+                export NODE_PATH="$venv_path"
+              else
+                export NODE_PATH="$NODE_PATH:$venv_path"
+              fi
+              echo "Set NODE_PATH to include $venv_path"
+            fi
+          else
+            echo "⚠️ Node.js environment path $venv_path not found"
+          fi
         fi
-        # For express.js, main file is "server.js"
-        node "$GENERATOR_NAME" -e "$path/server.js" -o "$OPENAPI_OUT_PATH"
+        
+        # Check if we should use npm/yarn
+        if [ -f "$GENERATOR_DIR/package.json" ]; then
+          echo "Found package.json in generator directory"
+          
+          # Check if script exists in package.json
+          if grep -q "\"generate\"" "$GENERATOR_DIR/package.json"; then
+            echo "Using npm run generate"
+            
+            # Check if we should use yarn or npm
+            if [ -f "$GENERATOR_DIR/yarn.lock" ]; then
+              yarn --cwd "$GENERATOR_DIR" generate -- -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
+            else
+              (cd "$GENERATOR_DIR" && npm run generate -- -e "$path/$main_file" -o "$OPENAPI_OUT_PATH")
+            fi
+          else
+            # Fallback to direct node execution
+            node "$GENERATOR_NAME" -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
+          fi
+        else
+          # For express.js, main file from config or fallback to server.js
+          if [ -n "$main_file" ] && [ -f "$path/$main_file" ]; then
+            node "$GENERATOR_NAME" -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
+          else
+            # Default main file
+            node "$GENERATOR_NAME" -e "$path/server.js" -o "$OPENAPI_OUT_PATH"
+          fi
+        fi
         ;;
       "flask")
         # For flask, activate virtual environment if available
-        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
-          echo "Activating Python virtual environment: $venv_path"
-          source "$venv_path/bin/activate"
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ]; then
+          # Check if it's a directory
+          if [ -d "$venv_path" ]; then
+            echo "Activating Python virtual environment: $venv_path"
+            if [ -f "$venv_path/bin/activate" ]; then
+              source "$venv_path/bin/activate"
+            else
+              echo "⚠️ Cannot find activate script in $venv_path/bin"
+              # Check if there are multiple environments (envs directory)
+              if [ -d "$venv_path/envs" ]; then
+                echo "Checking for environments in $venv_path/envs"
+                # Try to use the first environment found
+                for env_dir in "$venv_path/envs"/*; do
+                  if [ -d "$env_dir" ] && [ -f "$env_dir/bin/activate" ]; then
+                    echo "Found environment: $env_dir"
+                    source "$env_dir/bin/activate"
+                    break
+                  fi
+                done
+              fi
+            fi
+          elif [ -d "${venv_path}s" ]; then
+            # Try plural 'envs' if 'env' doesn't exist
+            echo "Environment directory $venv_path not found, trying ${venv_path}s"
+            for env_dir in "${venv_path}s"/*; do
+              if [ -d "$env_dir" ] && [ -f "$env_dir/bin/activate" ]; then
+                echo "Found environment: $env_dir"
+                source "$env_dir/bin/activate"
+                break
+              fi
+            done
+          else
+            echo "⚠️ Virtual environment path $venv_path not found"
+          fi
         fi
-        # For flask, main file is "main_.py"
-        python3 "$GENERATOR_NAME" -e "$path/main_.py" -o "$OPENAPI_OUT_PATH"
+        
+        # For flask, use main file from config
+        if [ -n "$main_file" ] && [ -f "$path/$main_file" ]; then
+          python3 "$GENERATOR_NAME" -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
+        else
+          # Fallback to conventional file name
+          python3 "$GENERATOR_NAME" -e "$path/main_.py" -o "$OPENAPI_OUT_PATH"
+        fi
+        
         # Deactivate virtual environment if it was activated
-        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
-          deactivate 2>/dev/null || true
+        if [ -n "$(which deactivate 2>/dev/null)" ]; then
+          deactivate
         fi
         ;;
       "ruby-on-rails")
         # For Rails, use bundler if virtual environment is available
-        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
-          echo "Using Ruby environment from: $venv_path"
-          export GEM_HOME="$venv_path"
-          export PATH="$venv_path/bin:$PATH"
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ]; then
+          if [ -d "$venv_path" ]; then
+            echo "Using Ruby environment from: $venv_path"
+            # Check for .gems directory
+            if [ -d "$venv_path/.gems" ]; then
+              export GEM_HOME="$venv_path/.gems"
+              export PATH="$venv_path/.gems/bin:$PATH"
+              echo "Set GEM_HOME to $GEM_HOME"
+            elif [ -d "$venv_path/vendor/bundle" ]; then
+              # Check for vendored gems
+              export BUNDLE_PATH="$venv_path/vendor/bundle"
+              export PATH="$venv_path/vendor/bundle/bin:$PATH"
+              echo "Set BUNDLE_PATH to $BUNDLE_PATH"
+            else
+              # Default approach
+              export GEM_HOME="$venv_path"
+              export PATH="$venv_path/bin:$PATH"
+              echo "Set GEM_HOME to $GEM_HOME"
+            fi
+            
+            # Check if bundler is available
+            if command -v bundle >/dev/null 2>&1; then
+              echo "Using bundler for Ruby dependencies"
+              BUNDLE_GEMFILE="$path/Gemfile" bundle exec ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
+            else
+              # Fall back to direct ruby execution
+              ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
+            fi
+          else
+            echo "⚠️ Ruby environment path $venv_path not found"
+            ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
+          fi
+        else
+          # No specified environment, use system Ruby
+          ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
         fi
-        # For Rails, use the path directly
-        ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
         ;;
       *)
         # Default case for any other framework type
         echo "⚠️ No specific generator command for framework: $framework. Using generic approach."
-        if [[ -f "$GENERATOR_NAME" ]]; then
-          "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
+        if [ -f "$GENERATOR_NAME" ]; then
+          # Check if virtual environment is specified
+          if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
+            echo "Using environment from: $venv_path"
+            # Try to detect and use appropriate environment
+            if [ -f "$venv_path/bin/activate" ]; then
+              # Looks like a Python/Ruby environment
+              source "$venv_path/bin/activate"
+              "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
+              deactivate 2>/dev/null || true
+            elif [ -d "$venv_path/bin" ]; then
+              # Generic bin directory approach
+              export PATH="$venv_path/bin:$PATH"
+              "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
+            else
+              # Just use the generator directly
+              "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
+            fi
+          else
+            # No environment specified, run directly
+            "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
+          fi
         else
           echo "❌ Cannot determine how to run generator for framework: $framework"
         fi

@@ -9,6 +9,6 @@
     "spring": null,
     "express.js": "creator/node_modules",
     "flask": "creator/env",
-    "ruby-on-rails": "creator/env"
+    "ruby-on-rails": "creator"
   }
 }
