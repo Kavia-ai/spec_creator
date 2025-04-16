@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Build OpenAPI Specifications for all frameworks defined in swagger.config.json
 # using generators defined in spec_generator.config.json
@@ -15,7 +15,7 @@ show_usage() {
 # Parse command line arguments
 SWAGGER_CONFIG="swagger.config.json"
 
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
   case "$1" in
     -c|--config)
       SWAGGER_CONFIG="$2"
@@ -56,6 +56,35 @@ else
   head -10 "$SWAGGER_CONFIG"
 fi
 
+# Function to normalize paths for the current system
+normalize_path() {
+  local path="$1"
+  
+  # Check if path exists as is
+  if [ -d "$path" ]; then
+    echo "$path"
+    return
+  fi
+  
+  # Handle macOS paths on Linux or vice versa
+  if echo "$path" | grep -q "^/Volumes/"; then
+    # Convert macOS path to Linux-style path
+    # Extract the relevant part after /Volumes/something/
+    local relative_path=$(echo "$path" | sed -E 's|^/Volumes/[^/]+/(.*)|\1|')
+    
+    # Try different base directories
+    for base_dir in "/home" "/home/kavia/workspace" "/home/kavia" "/home/ubuntu" "/opt" "/var"; do
+      if [ -d "$base_dir/$relative_path" ]; then
+        echo "$base_dir/$relative_path"
+        return
+      fi
+    done
+  fi
+  
+  # Return original path if no conversion could be made
+  echo "$path"
+}
+
 # Function to extract all frameworks from swagger.config.json
 get_all_frameworks() {
   # First try using jq if available
@@ -74,7 +103,8 @@ get_framework_path() {
   
   # First try using jq if available
   if command -v jq >/dev/null 2>&1; then
-    jq -r ".[] | select(.framework == \"$framework\") | .path" "$SWAGGER_CONFIG" 2>/dev/null
+    local raw_path=$(jq -r ".[] | select(.framework == \"$framework\") | .path" "$SWAGGER_CONFIG" 2>/dev/null)
+    normalize_path "$raw_path"
     return
   fi
   
@@ -82,7 +112,8 @@ get_framework_path() {
   # Convert file to single line and extract the entire object containing the framework
   local json_obj=$(cat "$SWAGGER_CONFIG" | tr -d '\n' | grep -o "{[^{]*\"framework\":\"$framework\"[^}]*}")
   # Then extract the path field
-  echo "$json_obj" | grep -o '"path":"[^"]*"' | cut -d'"' -f4
+  local raw_path=$(echo "$json_obj" | grep -o '"path":"[^"]*"' | cut -d'"' -f4)
+  normalize_path "$raw_path"
 }
 
 # Function to extract main file from swagger.config.json
@@ -141,6 +172,11 @@ process_framework() {
     return
   fi
   
+  if [ ! -d "$path" ]; then
+    echo "❌ Directory not found: $path"
+    return
+  fi
+  
   if [ -z "$main_file" ]; then
     echo "❌ Main file not found for $framework in $SWAGGER_CONFIG"
     return
@@ -156,11 +192,40 @@ process_framework() {
     GENERATOR_DIR=$(dirname "$generator")
     GENERATOR_NAME=$(basename "$generator")
     
+    # Check if generator actually exists
+    if [ ! -f "$GENERATOR_DIR/$GENERATOR_NAME" ]; then
+      echo "❌ Generator file not found: $GENERATOR_DIR/$GENERATOR_NAME"
+      return
+    fi
+    
     # Run the generator with appropriate command based on framework
-    cd "$GENERATOR_DIR"
+    cd "$GENERATOR_DIR" || { echo "❌ Failed to change directory to $GENERATOR_DIR"; return; }
     
     # Define the openapi.json output path
     OPENAPI_OUT_PATH="$path/openapi.json"
+    
+    # Ensure main file path is accessible
+    if echo "$main_file" | grep -q "^/"; then
+      # It's an absolute path
+      echo "Using absolute path for main file: $main_file"
+      if [ ! -f "$main_file" ]; then
+        echo "⚠️ Main file $main_file not found, trying to find it relative to project path"
+        # Try to find it under the project path
+        MAIN_FILE_REL=$(basename "$main_file")
+        if [ -f "$path/$MAIN_FILE_REL" ]; then
+          echo "Found main file at $path/$MAIN_FILE_REL"
+          main_file="$MAIN_FILE_REL"
+        else
+          echo "❌ Cannot locate main file: $main_file"
+          main_file=""
+        fi
+      fi
+    else
+      # It's a relative path, check if it exists
+      if [ ! -f "$path/$main_file" ]; then
+        echo "⚠️ Main file $path/$main_file not found"
+      fi
+    fi
     
     # Use framework-specific logic for handling virtual environments and main file paths
     case "$framework" in
@@ -185,6 +250,28 @@ process_framework() {
             fi
           else
             echo "⚠️ Node.js environment path $venv_path not found"
+            # Check for local node_modules
+            if [ -d "node_modules" ]; then
+              echo "Found local node_modules directory"
+              export PATH="$(pwd)/node_modules/.bin:$PATH"
+              if [ -z "$NODE_PATH" ]; then
+                export NODE_PATH="$(pwd)/node_modules"
+              else
+                export NODE_PATH="$NODE_PATH:$(pwd)/node_modules"
+              fi
+              echo "Set NODE_PATH to include local node_modules"
+            fi
+          fi
+        else
+          # Check for local node_modules as fallback
+          if [ -d "node_modules" ]; then
+            echo "Using local node_modules"
+            export PATH="$(pwd)/node_modules/.bin:$PATH"
+            if [ -z "$NODE_PATH" ]; then
+              export NODE_PATH="$(pwd)/node_modules"
+            else
+              export NODE_PATH="$NODE_PATH:$(pwd)/node_modules"
+            fi
           fi
         fi
         
@@ -198,7 +285,12 @@ process_framework() {
             
             # Check if we should use yarn or npm
             if [ -f "$GENERATOR_DIR/yarn.lock" ]; then
-              yarn --cwd "$GENERATOR_DIR" generate -- -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
+              if command -v yarn >/dev/null 2>&1; then
+                yarn --cwd "$GENERATOR_DIR" generate -- -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
+              else
+                echo "⚠️ yarn not found, falling back to npm"
+                (cd "$GENERATOR_DIR" && npm run generate -- -e "$path/$main_file" -o "$OPENAPI_OUT_PATH")
+              fi
             else
               (cd "$GENERATOR_DIR" && npm run generate -- -e "$path/$main_file" -o "$OPENAPI_OUT_PATH")
             fi
@@ -223,7 +315,7 @@ process_framework() {
           if [ -d "$venv_path" ]; then
             echo "Activating Python virtual environment: $venv_path"
             if [ -f "$venv_path/bin/activate" ]; then
-              source "$venv_path/bin/activate"
+              . "$venv_path/bin/activate"
             else
               echo "⚠️ Cannot find activate script in $venv_path/bin"
               # Check if there are multiple environments (envs directory)
@@ -233,7 +325,7 @@ process_framework() {
                 for env_dir in "$venv_path/envs"/*; do
                   if [ -d "$env_dir" ] && [ -f "$env_dir/bin/activate" ]; then
                     echo "Found environment: $env_dir"
-                    source "$env_dir/bin/activate"
+                    . "$env_dir/bin/activate"
                     break
                   fi
                 done
@@ -245,12 +337,24 @@ process_framework() {
             for env_dir in "${venv_path}s"/*; do
               if [ -d "$env_dir" ] && [ -f "$env_dir/bin/activate" ]; then
                 echo "Found environment: $env_dir"
-                source "$env_dir/bin/activate"
+                . "$env_dir/bin/activate"
                 break
               fi
             done
           else
+            # Try to find any Python environment
             echo "⚠️ Virtual environment path $venv_path not found"
+            echo "Looking for Python environments in current directory..."
+            if [ -d "env" ] && [ -f "env/bin/activate" ]; then
+              echo "Found local env directory"
+              . "env/bin/activate"
+            elif [ -d "venv" ] && [ -f "venv/bin/activate" ]; then
+              echo "Found local venv directory"
+              . "venv/bin/activate"
+            elif [ -d ".venv" ] && [ -f ".venv/bin/activate" ]; then
+              echo "Found local .venv directory"
+              . ".venv/bin/activate"
+            fi
           fi
         fi
         
@@ -263,7 +367,7 @@ process_framework() {
         fi
         
         # Deactivate virtual environment if it was activated
-        if [ -n "$(which deactivate 2>/dev/null)" ]; then
+        if which deactivate >/dev/null 2>&1; then
           deactivate
         fi
         ;;
@@ -298,8 +402,23 @@ process_framework() {
               ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
             fi
           else
+            # Try to use local Ruby environment
             echo "⚠️ Ruby environment path $venv_path not found"
-            ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
+            echo "Looking for Ruby environments in current directory..."
+            
+            if [ -d "vendor/bundle" ]; then
+              echo "Found local vendor/bundle"
+              export BUNDLE_PATH="$(pwd)/vendor/bundle"
+              export PATH="$(pwd)/vendor/bundle/bin:$PATH"
+            fi
+            
+            # Try to use bundler if available
+            if command -v bundle >/dev/null 2>&1; then
+              echo "Using local bundler for Ruby dependencies"
+              BUNDLE_GEMFILE="$path/Gemfile" bundle exec ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
+            else
+              ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
+            fi
           fi
         else
           # No specified environment, use system Ruby
@@ -316,9 +435,11 @@ process_framework() {
             # Try to detect and use appropriate environment
             if [ -f "$venv_path/bin/activate" ]; then
               # Looks like a Python/Ruby environment
-              source "$venv_path/bin/activate"
+              . "$venv_path/bin/activate"
               "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
-              deactivate 2>/dev/null || true
+              if which deactivate >/dev/null 2>&1; then
+                deactivate
+              fi
             elif [ -d "$venv_path/bin" ]; then
               # Generic bin directory approach
               export PATH="$venv_path/bin:$PATH"
@@ -338,7 +459,7 @@ process_framework() {
     esac
     
     # Return to the original directory
-    cd "$ORIGINAL_DIR"
+    cd "$ORIGINAL_DIR" || echo "⚠️ Failed to return to original directory"
     
     if [ -f "$OPENAPI_OUT_PATH" ]; then
       echo "✅ Successfully generated OpenAPI specification for $framework at $OPENAPI_OUT_PATH"
