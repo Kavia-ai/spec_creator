@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Display usage instructions
 show_usage() {
@@ -18,12 +18,12 @@ SOURCE_DIR="."
 OUTPUT_DIR=""
 
 # First check if there's a positional argument and no options
-if [ $# -eq 1 ] && [[ ! "$1" == -* ]]; then
+if [ $# -eq 1 ] && [ "$(echo "$1" | cut -c1)" != "-" ]; then
   SOURCE_DIR="$1"
   OUTPUT_DIR="$SOURCE_DIR"
 else
   # If we have options, parse them
-  while [[ $# -gt 0 ]]; do
+  while [ $# -gt 0 ]; do
     case "$1" in
       -s|--source)
         SOURCE_DIR="$2"
@@ -37,7 +37,7 @@ else
         show_usage
         ;;
       *)
-        if [[ ! "$1" == -* ]] && [ -z "$SOURCE_DIR" ]; then
+        if [ "$(echo "$1" | cut -c1)" != "-" ] && [ -z "$SOURCE_DIR" ]; then
           SOURCE_DIR="$1"
           shift
         else
@@ -68,8 +68,8 @@ fi
 echo "Source directory: $SOURCE_DIR"
 echo "Output directory: $OUTPUT_DIR"
 
-# Array to store gitignore patterns
-declare -a GITIGNORE_PATTERNS=()
+# Create a temporary file to store gitignore patterns
+GITIGNORE_FILE=$(mktemp)
 
 # Function to load gitignore patterns from a directory
 load_gitignore_patterns() {
@@ -80,11 +80,11 @@ load_gitignore_patterns() {
     # Read each non-empty, non-comment line
     while IFS= read -r line; do
       # Skip empty lines and comments
-      if [[ -n "$line" && ! "$line" =~ ^# ]]; then
+      if [ -n "$line" ] && [ "$(echo "$line" | cut -c1)" != "#" ]; then
         # Trim leading/trailing whitespace
         line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-        # Add pattern to array
-        GITIGNORE_PATTERNS+=("$line")
+        # Add pattern to temporary file
+        echo "$line" >> "$GITIGNORE_FILE"
       fi
     done < "$gitignore_file"
   fi
@@ -96,25 +96,26 @@ should_ignore() {
   local base_dir=$2
   local relative_path=${path#$base_dir/}
   
-  for pattern in "${GITIGNORE_PATTERNS[@]}"; do
+  # Check each pattern in the gitignore file
+  while IFS= read -r pattern; do
     # Handle directory patterns (ending with /)
-    if [[ "$pattern" == */ ]]; then
-      pattern="${pattern%/}"
-      if [[ "$relative_path" == "$pattern"/* || "$relative_path" == "$pattern" ]]; then
+    if [ "$(echo "$pattern" | tail -c 2)" = "/" ]; then
+      pattern=$(echo "$pattern" | sed 's/\/$//')
+      if [ -d "$path" ] && ([ "$relative_path" = "$pattern" ] || echo "$relative_path" | grep -q "^$pattern/"); then
         return 0  # Should ignore
       fi
     # Handle file patterns
-    elif [[ "$relative_path" == "$pattern" ]]; then
+    elif [ "$relative_path" = "$pattern" ]; then
       return 0  # Should ignore
     # Handle wildcard patterns
-    elif [[ "$pattern" == *"*"* ]]; then
+    elif echo "$pattern" | grep -q "\*"; then
       # Convert glob pattern to regex
       local regex_pattern=$(echo "$pattern" | sed 's/\./\\./g' | sed 's/\*/[^\/]*/g')
-      if [[ "$relative_path" =~ ^$regex_pattern$ || "$relative_path" =~ ^$regex_pattern/ ]]; then
+      if echo "$relative_path" | grep -E -q "^$regex_pattern$" || echo "$relative_path" | grep -E -q "^$regex_pattern/"; then
         return 0  # Should ignore
       fi
     fi
-  done
+  done < "$GITIGNORE_FILE"
   
   return 1  # Should not ignore
 }
@@ -141,11 +142,16 @@ extract_port() {
         port=$(grep -E "port[ ]*=[ ]*[0-9]+" "$DIR/$main_file" | grep -Eo '[0-9]+' | head -1)
         # If not found in main file, check all Python files
         if [ -z "$port" ]; then
-          port=$(find "$DIR" -name "*.py" -not -path "*/\.*" -type f | while read file; do
+          for file in $(find "$DIR" -name "*.py" -not -path "*/\.*" -type f); do
             if ! should_ignore "$file" "$DIR"; then
-              grep -l "app.run" "$file"
+              if grep -q "app.run" "$file"; then
+                port=$(grep -E "port[ ]*=[ ]*[0-9]+" "$file" | grep -Eo '[0-9]+' | head -1)
+                if [ -n "$port" ]; then
+                  break
+                fi
+              fi
             fi
-          done | xargs grep -E "port[ ]*=[ ]*[0-9]+" 2>/dev/null | grep -Eo '[0-9]+' | head -1)
+          done
         fi
       fi
       # Default Flask port if not found
@@ -157,11 +163,16 @@ extract_port() {
         port=$(grep -E "uvicorn.run|port[ ]*=[ ]*[0-9]+" "$DIR/$main_file" | grep -Eo '[0-9]+' | head -1)
         # If not found in main file, check all Python files
         if [ -z "$port" ]; then
-          port=$(find "$DIR" -name "*.py" -not -path "*/\.*" -type f | while read file; do
+          for file in $(find "$DIR" -name "*.py" -not -path "*/\.*" -type f); do
             if ! should_ignore "$file" "$DIR"; then
-              grep -l "uvicorn.run" "$file"
+              if grep -q "uvicorn.run" "$file"; then
+                port=$(grep -E "port[ ]*=[ ]*[0-9]+" "$file" | grep -Eo '[0-9]+' | head -1)
+                if [ -n "$port" ]; then
+                  break
+                fi
+              fi
             fi
-          done | xargs grep -E "port[ ]*=[ ]*[0-9]+" 2>/dev/null | grep -Eo '[0-9]+' | head -1)
+          done
         fi
       fi
       # Default FastAPI port if not found
@@ -174,11 +185,16 @@ extract_port() {
       fi
       # Check for port in settings.py
       if [ -z "$port" ]; then
-        port=$(find "$DIR" -name "settings.py" -not -path "*/\.*" -type f | while read file; do
+        for file in $(find "$DIR" -name "settings.py" -not -path "*/\.*" -type f); do
           if ! should_ignore "$file" "$DIR"; then
-            grep -l "PORT" "$file"
+            if grep -q "PORT" "$file"; then
+              port=$(grep -E "PORT[ ]*=[ ]*[0-9]+" "$file" | grep -Eo '[0-9]+' | head -1)
+              if [ -n "$port" ]; then
+                break
+              fi
+            fi
           fi
-        done | xargs grep -E "PORT[ ]*=[ ]*[0-9]+" 2>/dev/null | grep -Eo '[0-9]+' | head -1)
+        done
       fi
       # Default Django port if not found
       if [ -z "$port" ]; then port="8000"; fi
@@ -208,11 +224,16 @@ extract_port() {
       fi
       # Check all JS files if not found in main file
       if [ -z "$port" ]; then
-        port=$(find "$DIR" -name "*.js" -not -path "*/\.*" -type f | while read file; do
+        for file in $(find "$DIR" -name "*.js" -not -path "*/\.*" -type f); do
           if ! should_ignore "$file" "$DIR"; then
-            grep -l "listen" "$file"
+            if grep -q "listen" "$file"; then
+              port=$(grep -E "\.listen\([ ]*[0-9]+" "$file" | grep -Eo '[0-9]+' | head -1)
+              if [ -n "$port" ]; then
+                break
+              fi
+            fi
           fi
-        done | xargs grep -E "\.listen\([ ]*[0-9]+" 2>/dev/null | grep -Eo '[0-9]+' | head -1)
+        done
       fi
       # Default Express port if not found
       if [ -z "$port" ]; then port="3000"; fi
@@ -256,20 +277,31 @@ check_frameworks() {
   echo "Analyzing directory: $DIR"
 
   echo "Checking for Python frameworks..."
-  # Only check files in the current directory, not recursive
-  if find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f | while read file; do
-      if ! should_ignore "$file" "$DIR"; then
-        grep -l "from flask import\|app = Flask" "$file"
+  # Check for Flask
+  FLASK_FOUND=0
+  for file in $(find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f); do
+    if ! should_ignore "$file" "$DIR"; then
+      if grep -q "from flask import\|app = Flask" "$file"; then
+        FLASK_FOUND=1
+        break
       fi
-    done | grep -q .; then
+    fi
+  done
+  
+  if [ "$FLASK_FOUND" -eq 1 ]; then
     language="python"
     framework="flask"
     # Find file where Flask app is actually initialized
-    FLASK_FILE=$(find "$DIR" -maxdepth 2 -name "*.py" -not -path "*/\.*" -type f | while read file; do
+    FLASK_FILE=""
+    for file in $(find "$DIR" -maxdepth 2 -name "*.py" -not -path "*/\.*" -type f); do
       if ! should_ignore "$file" "$DIR"; then
-        grep -l "app = Flask" "$file"
+        if grep -q "app = Flask" "$file"; then
+          FLASK_FILE="$file"
+          break
+        fi
       fi
-    done | head -1)
+    done
+    
     if [ -n "$FLASK_FILE" ]; then
       # Get the filename without the path
       main_file=$(basename "$FLASK_FILE")
@@ -283,51 +315,83 @@ check_frameworks() {
         main_file="wsgi.py"
       fi
     fi
-  elif find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f | while read file; do
+  fi
+
+  # Check for FastAPI
+  if [ -z "$framework" ]; then
+    FASTAPI_FOUND=0
+    for file in $(find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f); do
       if ! should_ignore "$file" "$DIR"; then
-        grep -l "from fastapi import\|app = FastAPI" "$file"
+        if grep -q "from fastapi import\|app = FastAPI" "$file"; then
+          FASTAPI_FOUND=1
+          break
+        fi
       fi
-    done | grep -q .; then
-    language="python"
-    framework="fastapi"
-    # Find file where FastAPI app is actually initialized
-    FASTAPI_FILE=$(find "$DIR" -maxdepth 2 -name "*.py" -not -path "*/\.*" -type f | while read file; do
-      if ! should_ignore "$file" "$DIR"; then
-        grep -l "app = FastAPI" "$file"
-      fi
-    done | head -1)
-    if [ -n "$FASTAPI_FILE" ]; then
-      # Get the filename without the path
-      main_file=$(basename "$FASTAPI_FILE")
-    else
-      # Fall back to conventional filenames
-      if [ -f "$DIR/app.py" ] && ! should_ignore "$DIR/app.py" "$DIR"; then
-        main_file="app.py"
-      elif [ -f "$DIR/main.py" ] && ! should_ignore "$DIR/main.py" "$DIR"; then
-        main_file="main.py"
-      elif [ -f "$DIR/asgi.py" ] && ! should_ignore "$DIR/asgi.py" "$DIR"; then
-        main_file="asgi.py"
+    done
+    
+    if [ "$FASTAPI_FOUND" -eq 1 ]; then
+      language="python"
+      framework="fastapi"
+      # Find file where FastAPI app is actually initialized
+      FASTAPI_FILE=""
+      for file in $(find "$DIR" -maxdepth 2 -name "*.py" -not -path "*/\.*" -type f); do
+        if ! should_ignore "$file" "$DIR"; then
+          if grep -q "app = FastAPI" "$file"; then
+            FASTAPI_FILE="$file"
+            break
+          fi
+        fi
+      done
+      
+      if [ -n "$FASTAPI_FILE" ]; then
+        # Get the filename without the path
+        main_file=$(basename "$FASTAPI_FILE")
+      else
+        # Fall back to conventional filenames
+        if [ -f "$DIR/app.py" ] && ! should_ignore "$DIR/app.py" "$DIR"; then
+          main_file="app.py"
+        elif [ -f "$DIR/main.py" ] && ! should_ignore "$DIR/main.py" "$DIR"; then
+          main_file="main.py"
+        elif [ -f "$DIR/asgi.py" ] && ! should_ignore "$DIR/asgi.py" "$DIR"; then
+          main_file="asgi.py"
+        fi
       fi
     fi
-  elif [ -f "$DIR/manage.py" ] && ! should_ignore "$DIR/manage.py" "$DIR" && find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f | while read file; do
+  fi
+  
+  # Check for Django
+  if [ -z "$framework" ] && [ -f "$DIR/manage.py" ] && ! should_ignore "$DIR/manage.py" "$DIR"; then
+    DJANGO_FOUND=0
+    for file in $(find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f); do
       if ! should_ignore "$file" "$DIR"; then
-        grep -l "django" "$file"
+        if grep -q "django" "$file"; then
+          DJANGO_FOUND=1
+          break
+        fi
       fi
-    done | grep -q .; then
-    language="python"
-    framework="django"
-    # For Django, check if there's a settings file with INSTALLED_APPS
-    DJANGO_SETTINGS=$(find "$DIR" -name "settings.py" -not -path "*/\.*" -type f | while read file; do
-      if ! should_ignore "$file" "$DIR"; then
-        grep -l "INSTALLED_APPS" "$file"
-      fi
-    done | head -1)
-    if [ -n "$DJANGO_SETTINGS" ]; then
-      main_file=$(basename "$(dirname "$DJANGO_SETTINGS")")/settings.py
-    else
-      # Django main file is usually manage.py
-      if [ -f "$DIR/manage.py" ]; then
-        main_file="manage.py"
+    done
+    
+    if [ "$DJANGO_FOUND" -eq 1 ]; then
+      language="python"
+      framework="django"
+      # For Django, check if there's a settings file with INSTALLED_APPS
+      DJANGO_SETTINGS=""
+      for file in $(find "$DIR" -name "settings.py" -not -path "*/\.*" -type f); do
+        if ! should_ignore "$file" "$DIR"; then
+          if grep -q "INSTALLED_APPS" "$file"; then
+            DJANGO_SETTINGS="$file"
+            break
+          fi
+        fi
+      done
+      
+      if [ -n "$DJANGO_SETTINGS" ]; then
+        main_file=$(basename "$(dirname "$DJANGO_SETTINGS")")/settings.py
+      else
+        # Django main file is usually manage.py
+        if [ -f "$DIR/manage.py" ]; then
+          main_file="manage.py"
+        fi
       fi
     fi
   fi
@@ -337,11 +401,16 @@ check_frameworks() {
     language="ruby"
     framework="ruby-on-rails"
     # Find the actual Rails application class
-    RAILS_APP=$(find "$DIR" -name "application.rb" -not -path "*/\.*" -type f | while read file; do
+    RAILS_APP=""
+    for file in $(find "$DIR" -name "application.rb" -not -path "*/\.*" -type f); do
       if ! should_ignore "$file" "$DIR"; then
-        grep -l "class Application < Rails::Application" "$file"
+        if grep -q "class Application < Rails::Application" "$file"; then
+          RAILS_APP="$file"
+          break
+        fi
       fi
-    done | head -1)
+    done
+    
     if [ -n "$RAILS_APP" ]; then
       main_file="config/application.rb"
     elif [ -f "$DIR/config.ru" ] && ! should_ignore "$DIR/config.ru" "$DIR"; then
@@ -354,11 +423,16 @@ check_frameworks() {
     language="java"
     framework="spring"
     # Find Spring Boot main application class with @SpringBootApplication annotation
-    SPRING_FILE=$(find "$DIR" -path "*/src/main/java/*" -name "*.java" -not -path "*/\.*" -type f | while read file; do
+    SPRING_FILE=""
+    for file in $(find "$DIR" -path "*/src/main/java/*" -name "*.java" -not -path "*/\.*" -type f); do
       if ! should_ignore "$file" "$DIR"; then
-        grep -l "SpringApplication.run\|@SpringBootApplication" "$file"
+        if grep -q "SpringApplication.run\|@SpringBootApplication" "$file"; then
+          SPRING_FILE="$file"
+          break
+        fi
       fi
-    done | head -1)
+    done
+    
     if [ -n "$SPRING_FILE" ]; then
       # Get the relative path from the project root
       main_file=${SPRING_FILE#$ABSOLUTE_PATH/}
@@ -370,11 +444,16 @@ check_frameworks() {
     language="javascript"
     framework="express.js"
     # Find file where Express app is initialized
-    EXPRESS_APP=$(find "$DIR" -name "*.js" -not -path "*/\.*" -type f | while read file; do
+    EXPRESS_APP=""
+    for file in $(find "$DIR" -name "*.js" -not -path "*/\.*" -type f); do
       if ! should_ignore "$file" "$DIR"; then
-        grep -l "express()\|require('express')" "$file"
+        if grep -q "express()\|require('express')" "$file"; then
+          EXPRESS_APP="$file"
+          break
+        fi
       fi
-    done | head -1)
+    done
+    
     if [ -n "$EXPRESS_APP" ]; then
       main_file=$(basename "$EXPRESS_APP")
     else
@@ -463,3 +542,6 @@ else
   # Print file size for debugging
   ls -la "$OUTPUT_DIR/swagger.config.json"
 fi
+
+# Clean up temporary files
+rm -f "$GITIGNORE_FILE"
