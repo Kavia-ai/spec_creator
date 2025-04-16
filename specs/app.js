@@ -76,17 +76,23 @@ function findFramework(config, frameworkName) {
   );
 }
 
-// Proxy endpoint
-app.use('/proxy/:framework/*', async (req, res) => {
+// Modified proxy endpoint with explicit routing pattern
+app.all('/proxy/:framework*', async (req, res) => {
   try {
-    // Extract the framework name and path
+    // Extract the framework name
     const frameworkName = req.params.framework;
     
-    // Extract the path after the framework name correctly
-    // This needs to include the entire URL path after /proxy/framework/
-    let pathAfterFramework = req.path.substring(req.path.indexOf(frameworkName) + frameworkName.length);
+    // Get the complete original URL and path info for debugging
+    console.log('Original URL:', req.originalUrl);
+    console.log('URL:', req.url);
+    console.log('Path:', req.path);
+    console.log('Params:', req.params);
     
-    // Make sure the path starts with a slash
+    // Extract the path after the framework name
+    // The * wildcard is not captured as a named parameter, so we need to extract it
+    let pathAfterFramework = req.path.replace(`/proxy/${frameworkName}`, '') || '/';
+    
+    // Ensure the path starts with a slash
     if (!pathAfterFramework.startsWith('/')) {
       pathAfterFramework = '/' + pathAfterFramework;
     }
@@ -121,7 +127,7 @@ app.use('/proxy/:framework/*', async (req, res) => {
     
     console.log(`Proxying request to ${targetHost}${pathAfterFramework}`);
     
-    // Create the proxy request
+    // Create the proxy request options
     const options = {
       hostname: 'localhost',
       port: port,
@@ -189,9 +195,14 @@ app.use('/proxy/:framework/*', async (req, res) => {
 });
 
 // Alternate implementation using http-proxy-middleware
-app.use('/proxy-alt/:framework', async (req, res, next) => {
+app.all('/proxy-alt/:framework*', async (req, res, next) => {
   try {
     const frameworkName = req.params.framework;
+    
+    // Debug logs
+    console.log('Alt-Proxy - Original URL:', req.originalUrl);
+    console.log('Alt-Proxy - Path:', req.path);
+    
     const basePath = req.query.basePath;
     
     // Ensure basePath is provided
@@ -221,10 +232,10 @@ app.use('/proxy-alt/:framework', async (req, res, next) => {
       target: `http://localhost:${port}`,
       changeOrigin: true,
       pathRewrite: function (path) {
-        // More reliable path rewriting
-        const pathParts = path.split(`/proxy-alt/${frameworkName}`);
-        // Return the path after the framework, or '/' if there's nothing
-        return pathParts.length > 1 ? pathParts[1] || '/' : '/';
+        // Extract the path after the framework name
+        const newPath = path.replace(`/proxy-alt/${frameworkName}`, '') || '/';
+        console.log(`Alt-Proxy - Rewriting path from ${path} to ${newPath}`);
+        return newPath;
       },
       onProxyReq: (proxyReq, req) => {
         // If there's a body and it's a JSON body, restream it
