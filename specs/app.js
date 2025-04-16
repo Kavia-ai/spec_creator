@@ -50,8 +50,13 @@ app.use('/proxy/:framework/*', async (req, res) => {
     
     console.log(`Proxy request for framework: ${frameworkName}, path: ${pathAfterFramework}`);
     
-    // Get basePath from query parameter or use default source path
-    const basePath = req.query.basePath || '/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source';
+    // Get basePath from query parameter
+    const basePath = req.query.basePath;
+    
+    // Ensure basePath is provided
+    if (!basePath) {
+      return res.status(400).json({ error: 'basePath parameter is required' });
+    }
     
     // Get the configuration data
     const configData = await getFrameworkConfig(basePath);
@@ -128,7 +133,12 @@ app.use('/proxy/:framework/*', async (req, res) => {
 app.use('/proxy-alt/:framework', async (req, res, next) => {
   try {
     const frameworkName = req.params.framework;
-    const basePath = req.query.basePath || '/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source';
+    const basePath = req.query.basePath;
+    
+    // Ensure basePath is provided
+    if (!basePath) {
+      return res.status(400).json({ error: 'basePath parameter is required' });
+    }
     
     // Get the configuration data
     const configData = await getFrameworkConfig(basePath);
@@ -353,14 +363,18 @@ app.get('/base-path', (req, res) => {
 
 // Endpoint to get available base paths
 app.get('/base-paths', (req, res) => {
-  // Define default paths you want to offer
-  const defaultPaths = [
-    '/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source',
-    '/path/to/other/source'
+  // Define common locations to look for config files
+  const commonLocations = [
+    // Current working directory
+    process.cwd(),
+    // Home directory
+    require('os').homedir(),
+    // Temp directory
+    require('os').tmpdir()
   ];
   
-  // You could also scan for directories with swagger.config.json files
-  const availablePaths = defaultPaths.filter(p => {
+  // Only return paths that actually exist and contain swagger.config.json
+  const availablePaths = commonLocations.filter(p => {
     try {
       return fs.existsSync(path.join(p, 'swagger.config.json'));
     } catch (error) {
