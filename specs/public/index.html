@@ -284,7 +284,223 @@
       display: none; /* Hide default topbar */
     }
     
-    /* Loading indicator */
+    /* Improved Loading Styles */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    
+    body.dark-mode .loading-overlay {
+      background-color: rgba(15, 23, 42, 0.85);
+    }
+    
+    .loading-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .loading-progress {
+      width: 280px;
+      max-width: 90%;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 20px;
+      text-align: center;
+    }
+    
+    body.dark-mode .loading-progress {
+      background-color: #1e293b;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .loading-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+    
+    .loading-spinner-container {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+    
+    .pulse-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    
+    .pulse-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    .pulse-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    
+    .pulse-dot:nth-child(4) {
+      animation-delay: 0.6s;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.6;
+      }
+      50% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+    }
+    
+    .loading-progress-bar {
+      width: 100%;
+      height: 6px;
+      background-color: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    
+    body.dark-mode .loading-progress-bar {
+      background-color: #334155;
+    }
+    
+    .loading-progress-fill {
+      height: 100%;
+      background-color: var(--primary-color);
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 3px;
+      animation: progress-animation 2s ease-in-out infinite;
+    }
+    
+    @keyframes progress-animation {
+      0% { width: 10%; }
+      50% { width: 70%; }
+      70% { width: 80%; }
+      100% { width: 10%; }
+    }
+    
+    .loading-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 0.85rem;
+      color: #64748b;
+      transition: color 0.3s;
+    }
+    
+    body.dark-mode .loading-step {
+      color: #94a3b8;
+    }
+    
+    .loading-step.active {
+      color: var(--text-color);
+      font-weight: 500;
+    }
+    
+    .loading-step-icon {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .loading-step-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .loading-step-icon .check-icon {
+      stroke: #10b981;
+      display: none;
+    }
+    
+    .loading-step-icon .spinner-icon {
+      stroke: var(--primary-color);
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    
+    .loading-step.completed .loading-step-icon .check-icon {
+      display: block;
+    }
+    
+    .loading-step.active .loading-step-icon .spinner-icon {
+      display: block;
+    }
+    
+    .loading-step.idle .loading-step-icon {
+      opacity: 0.5;
+    }
+    
+    /* Improved button loading state */
+    .action-button .button-loader {
+      display: none;
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .action-button.loading {
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    
+    .action-button.loading .button-loader {
+      display: flex;
+    }
+    
+    /* Inline loading indicators */
+    .inline-loader {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background-color: rgba(59, 130, 246, 0.1);
+      border-radius: 4px;
+      margin-left: 8px;
+      font-size: 0.75rem;
+    }
+    
+    body.dark-mode .inline-loader {
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .inline-loader .pulse-dot {
+      width: 5px;
+      height: 5px;
+    }
+    
+    /* Replace existing loading styles */
     .loading {
       display: none;
       align-items: center;
@@ -310,7 +526,7 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
+    
     /* Theme toggle */
     .theme-toggle {
       background: none;
@@ -954,17 +1170,14 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <div class="header-content">
-        <div class="logo">
-          <img src="kavia_logo.svg" alt="Kavia Logo" height="32">
-          <div class="logo-text">
-          <span>Kavia Swagger View</span>
-            <div class="logo-subtitle">Workflow Manager</div>
-          </div>
-        </div>
-        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+  <main class="container">
+    <div class="accordion">
+      <div class="accordion-header" id="main-accordion-header">
+        <h2 class="form-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-icon"><path d="M4 21v-13a3 3 0 0 1 3-3h5a3 3 0 0 1 3 3v13"></path><path d="M18 21V8"></path><path d="M4 8v-2a2 2 0 0 1 2-2h8"></path><path d="M22 21V7h-6"></path><path d="M18 3v4"></path><path d="M15 5h6"></path></svg>
+          Project Configuration and Tools
+          <span class="accordion-toggle"></span>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" style="margin-right: 10px;">
           <svg class="dark-mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
@@ -980,23 +1193,18 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
         </button>
-      </div>
-    </div>
-  </header>
-  
-  <main class="container">
-    <div class="accordion">
-      <div class="accordion-header" id="main-accordion-header">
-        <h2 class="form-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-icon"><path d="M4 21v-13a3 3 0 0 1 3-3h5a3 3 0 0 1 3 3v13"></path><path d="M18 21V8"></path><path d="M4 8v-2a2 2 0 0 1 2-2h8"></path><path d="M22 21V7h-6"></path><path d="M18 3v4"></path><path d="M15 5h6"></path></svg>
-          Project Configuration and Tools
-          <span class="accordion-toggle"></span>
         </h2>
       </div>
       <div class="accordion-content" id="main-accordion-content">
     <div class="input-form">
       <div class="notification" id="notification"></div>
       
+          <h3 class="form-title" style="border-bottom: 2px solid var(--primary-color); margin-bottom: 1rem;">
+            <img src="kavia_logo.svg" alt="Kavia Logo" height="32" style="vertical-align: middle; margin-right: 10px;">
+            Kavia Swagger View
+            <div style="font-size: 0.75rem; font-weight: 500; color: var(--primary-color);">Workflow Manager</div>
+          </h3>
+          
           <h3 class="section-title">Select OpenAPI Specification</h3>
       <div class="base-path-display">
             Source Path: <span id="base-path-value">Loading...</span>
@@ -1012,7 +1220,6 @@
             </div>
       </div>
       
-          <!-- Project details panel -->
           <div class="project-details" id="project-details" style="display: none;">
             <h3 class="details-title">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="details-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -1081,12 +1288,18 @@
         <span>Loading specification...</span>
       </div>
       
-      <!-- Add buttons for running shell scripts -->
           <h3 class="section-title">Tools</h3>
       <div class="script-buttons">
             <div class="button-wrapper">
         <button id="run-detector-button" class="action-button">
           Run Framework Detector
+          <div class="button-loader">
+            <div class="pulse-spinner">
+              <div class="pulse-dot"></div>
+              <div class="pulse-dot"></div>
+              <div class="pulse-dot"></div>
+            </div>
+          </div>
         </button>
               <div class="loading" id="detector-loading" style="display: none;">
                 <div class="loading-spinner"></div>
@@ -1096,6 +1309,13 @@
             <div class="button-wrapper">
         <button id="run-builder-button" class="action-button">
           Run OpenAPI Builder
+          <div class="button-loader">
+            <div class="pulse-spinner">
+              <div class="pulse-dot"></div>
+              <div class="pulse-dot"></div>
+              <div class="pulse-dot"></div>
+            </div>
+          </div>
         </button>
               <div class="loading" id="builder-loading" style="display: none;">
                 <div class="loading-spinner"></div>
@@ -1112,7 +1332,6 @@
     </div>
   </main>
 
-  <!-- Add configuration details panel -->
   <div class="config-panel" id="config-panel">
     <div class="config-header">
       <h3>Project Configuration</h3>
@@ -1126,11 +1345,28 @@
         </div>
         <div class="form-group">
           <label for="config-language">Language:</label>
-          <input type="text" id="config-language" class="config-input">
+          <select id="config-language" class="config-input">
+            <option value="">Select Language</option>
+            <option value="JavaScript">JavaScript</option>
+            <option value="Python">Python</option>
+            <option value="Java">Java</option>
+            <option value="Ruby">Ruby</option>
+            <option value="PHP">PHP</option>
+            <option value="Go">Go</option>
+            <option value="C#">C#</option>
+            <option value="TypeScript">TypeScript</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="config-framework">Framework:</label>
-          <input type="text" id="config-framework" class="config-input">
+          <select id="config-framework" class="config-input">
+            <option value="">Select Framework</option>
+            <option value="Express">Express</option>
+            <option value="Flask">Flask</option>
+            <option value="Rails">Ruby on Rails</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="config-main-file">Main File:</label>
@@ -1156,64 +1392,108 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui-bundle.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui-standalone-preset.js"></script>
   <script>
-    // Global variable to store config data
     let configData = [];
     let currentConfigIndex = -1;
     let currentBasePath = '';
     
-    // Function to get URL parameters
+    // Loading utilities
+    function showGlobalLoading() {
+      const loadingOverlay = document.getElementById('global-loading');
+      loadingOverlay.classList.add('visible');
+      
+      // Reset steps
+      document.querySelectorAll('.loading-step').forEach(step => {
+        step.classList.remove('active', 'completed');
+        step.classList.add('idle');
+      });
+      
+      // Reset progress
+      const progressFill = document.getElementById('loading-progress-fill');
+      progressFill.style.width = '10%';
+    }
+    
+    function hideGlobalLoading() {
+      const loadingOverlay = document.getElementById('global-loading');
+      loadingOverlay.classList.remove('visible');
+    }
+    
+    function updateLoadingStep(stepId, status) {
+      const step = document.getElementById(stepId);
+      if (!step) return;
+      
+      step.classList.remove('idle', 'active', 'completed');
+      step.classList.add(status);
+      
+      // Update progress bar based on completed steps
+      const totalSteps = document.querySelectorAll('.loading-step').length;
+      const completedSteps = document.querySelectorAll('.loading-step.completed').length;
+      const activeSteps = document.querySelectorAll('.loading-step.active').length;
+      
+      let progress = (completedSteps / totalSteps) * 100;
+      if (activeSteps > 0) {
+        progress += (1 / totalSteps) * 50; // Add half-step for active items
+      }
+      
+      const progressFill = document.getElementById('loading-progress-fill');
+      if (completedSteps === totalSteps) {
+        // All steps completed, stop animation and set to 100%
+        progressFill.style.width = '100%';
+        progressFill.style.animation = 'none';
+        
+        // Hide loading after a short delay
+        setTimeout(() => {
+          hideGlobalLoading();
+        }, 800);
+      } else {
+        // Still in progress
+        progressFill.style.animation = 'none';
+        progressFill.style.width = `${progress}%`;
+      }
+    }
+    
     function getUrlParameter(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
     }
     
-    // Function to append basePath to URLs
     function appendBasePath(url) {
-      // If the URL already has a basePath parameter, return it as is
       if (url.includes('basePath=')) {
         return url;
       }
       
-      // Get the current basePath
       const basePath = getUrlParameter('basePath') || currentBasePath;
       
       if (!basePath) {
         return url;
       }
       
-      // Append the basePath parameter
       const separator = url.includes('?') ? '&' : '?';
       return `${url}${separator}basePath=${encodeURIComponent(basePath)}`;
     }
     
-    // Function to show notification
     function showNotification(message, type) {
       const notification = document.getElementById('notification');
       notification.textContent = message;
       notification.className = 'notification ' + type;
       notification.style.display = 'block';
       
-      // Hide after 5 seconds
       setTimeout(() => {
         notification.style.display = 'none';
       }, 5000);
     }
     
-    // Function to get a language badge
     function getLanguageBadge(language) {
       if (!language) return '';
       return `<span class="api-badge ${language.toLowerCase()}">${language}</span>`;
     }
     
-    // Function to load the configuration file
     async function loadFrameworks() {
       try {
-        document.getElementById('loading-frameworks').style.display = 'flex';
+        updateLoadingStep('step-load', 'active');
         document.getElementById('framework-selector').innerHTML = '<option value="">Loading...</option>';
         
-        // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
-        currentBasePath = basePath; // Store for future use
+        currentBasePath = basePath;
         
         if (!basePath) {
           throw new Error('No basePath provided in URL. Use ?basePath=/path/to/source');
@@ -1227,19 +1507,15 @@
         
         const data = await response.json();
         
-        // Store the config data globally
         configData = data;
         
-        // Update the select dropdown with the frameworks
         const frameworkSelect = document.getElementById('framework-selector');
         frameworkSelect.innerHTML = '<option value="">Select a framework</option>';
         
         data.forEach((item, index) => {
-          // Extract folder name from the path
           let folderName = '';
           
           if (item.path) {
-            // Split the path and get the last meaningful part
             const pathParts = item.path.split('/');
               for (let i = pathParts.length - 1; i >= 0; i--) {
               if (pathParts[i] && pathParts[i] !== '') {
@@ -1249,12 +1525,10 @@
               }
             }
             
-          // If folderName is still empty, try to use the display name
           if (!folderName && item.folder_name) {
             folderName = item.folder_name;
           }
           
-          // If still no folder name, use framework as fallback
           if (!folderName) {
             folderName = item.framework;
           }
@@ -1262,65 +1536,63 @@
           const option = document.createElement('option');
           option.value = item.openapi_path || '';
           
-          // Store the index in the configData array as a data attribute
           option.dataset.index = index;
           
-          // Set the text to show folder name with framework info in smaller text
           option.textContent = `${folderName} (${item.framework})`;
           
-          // Add a title attribute for more detail on hover
           option.title = `${folderName} - ${item.framework} (${item.language})`;
           
           frameworkSelect.appendChild(option);
         });
         
-        document.getElementById('loading-frameworks').style.display = 'none';
+        updateLoadingStep('step-load', 'completed');
+        
+        return data.length > 0;
       } catch (error) {
         console.error('Error loading frameworks:', error);
-        document.getElementById('loading-frameworks').style.display = 'none';
         document.getElementById('framework-selector').innerHTML = '<option value="">Error loading frameworks</option>';
         showError(`Failed to load frameworks: ${error.message}`);
+        updateLoadingStep('step-load', 'idle');
+        return false;
       }
     }
     
-    // Function to load the OpenAPI specification
     async function loadSpec(path) {
       try {
-        document.getElementById('loading-spec').style.display = 'flex';
+        const loadingSpec = document.getElementById('loading-spec');
+        if (loadingSpec) loadingSpec.style.display = 'flex';
+        
         document.getElementById('swagger-ui').innerHTML = '';
         hideNotifications();
         
-        // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
         
         if (!basePath) {
           throw new Error('No basePath provided in URL');
         }
         
-        // Create a direct URL to the view endpoint with basePath
         const viewUrl = appendBasePath(`/view?path=${encodeURIComponent(path)}`);
         
-        // Create an iframe with the src set to the view URL
         const iframe = document.createElement('iframe');
         iframe.src = viewUrl;
         iframe.style.width = '100%';
         iframe.style.height = '800px';
         iframe.style.border = 'none';
         
-        // Add to the container
         const iframeContainer = document.getElementById('swagger-ui');
         iframeContainer.innerHTML = '';
         iframeContainer.appendChild(iframe);
         
-        document.getElementById('loading-spec').style.display = 'none';
-      } catch (error) {
+        if (loadingSpec) loadingSpec.style.display = 'none';
+        } catch (error) {
         console.error('Error loading spec:', error);
-        document.getElementById('loading-spec').style.display = 'none';
+        if (document.getElementById('loading-spec')) {
+          document.getElementById('loading-spec').style.display = 'none';
+        }
         showError(`Failed to load OpenAPI specification. ${error.message}`);
       }
     }
     
-    // Theme toggle functionality
     function setupThemeToggle() {
       const themeToggle = document.getElementById('theme-toggle');
       const savedTheme = localStorage.getItem('theme');
@@ -1336,20 +1608,51 @@
       });
     }
     
-    // When the page loads
-    window.onload = function() {
+    window.onload = async function() {
       setupThemeToggle();
       
-      // Initialize the accordion
       setupAccordion();
       
-      // Display the base path from URL
       fetchBasePath();
       
-      // Load frameworks based on URL parameter
-      loadFrameworks();
+      // Show global loading
+      showGlobalLoading();
       
-      // Framework selector change event
+      // Check if config already exists
+      const configExists = await checkConfigExists();
+      
+      if (!configExists) {
+        // Only run detector and builder if config doesn't exist
+        console.log('No swagger.config.json found, running framework detector and OpenAPI builder');
+        
+        // Run framework detector automatically
+        await runFrameworkDetector();
+        
+        // Run OpenAPI builder automatically
+        await runOpenAPIBuilder();
+      } else {
+        console.log('Existing swagger.config.json found, skipping automatic detection and building');
+        
+        // Update loading UI to show the first steps are already done
+        updateLoadingStep('step-detect', 'completed');
+        updateLoadingStep('step-build', 'completed');
+      }
+      
+      // Load frameworks and select the first one
+      const hasFrameworks = await loadFrameworks();
+      
+      if (hasFrameworks) {
+        // Select the first framework by default (index 1 to skip the placeholder)
+        const frameworkSelect = document.getElementById('framework-selector');
+        if (frameworkSelect.options.length > 1) {
+          frameworkSelect.selectedIndex = 1;
+          frameworkSelect.dispatchEvent(new Event('change'));
+        }
+      } else {
+        // Hide loading if no frameworks were found
+        hideGlobalLoading();
+      }
+      
       document.getElementById('framework-selector').addEventListener('change', function() {
         updateSelectedOption();
         const filePath = this.value;
@@ -1358,7 +1661,6 @@
         
         console.log('Selected framework path:', filePath, 'Config index:', currentConfigIndex);
         
-        // Update project details
         updateProjectDetails(currentConfigIndex);
         
         if (filePath) {
@@ -1366,7 +1668,6 @@
         }
       });
       
-      // Edit configuration button
       document.getElementById('edit-config-button').addEventListener('click', function() {
         if (currentConfigIndex >= 0) {
           openConfigPanel(currentConfigIndex);
@@ -1375,30 +1676,23 @@
         }
       });
       
-      // Close configuration panel
       document.getElementById('close-config').addEventListener('click', closeConfigPanel);
       
-      // Save configuration
       document.getElementById('save-config').addEventListener('click', saveConfig);
       
-      // Close panel when clicking overlay
       document.getElementById('overlay').addEventListener('click', closeConfigPanel);
       
-      // Run Framework Detector button
       document.getElementById('run-detector-button').addEventListener('click', function() {
         runFrameworkDetector();
       });
       
-      // Run OpenAPI Builder button
       document.getElementById('run-builder-button').addEventListener('click', function() {
         runOpenAPIBuilder();
       });
     };
     
-    // Function to fetch the base path
     async function fetchBasePath() {
       try {
-        // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
         
         if (basePath) {
@@ -1412,13 +1706,14 @@
       }
     }
     
-    // Function to run the framework detector
     async function runFrameworkDetector() {
       try {
-        document.getElementById('detector-loading').style.display = 'flex';
+        const detectorBtn = document.getElementById('run-detector-button');
+        if (detectorBtn) detectorBtn.classList.add('loading');
+        
+        updateLoadingStep('step-detect', 'active');
         hideNotifications();
         
-        // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
         
         if (!basePath) {
@@ -1436,25 +1731,30 @@
         
         const data = await response.json();
         
-        document.getElementById('detector-loading').style.display = 'none';
+        if (detectorBtn) detectorBtn.classList.remove('loading');
         showSuccess('Framework detection completed successfully.');
+        updateLoadingStep('step-detect', 'completed');
         
-        // Reload frameworks
-        loadFrameworks();
+        return true;
       } catch (error) {
         console.error('Error running detector:', error);
-        document.getElementById('detector-loading').style.display = 'none';
+        const detectorBtn = document.getElementById('run-detector-button');
+        if (detectorBtn) detectorBtn.classList.remove('loading');
+        
         showError(`Failed to run framework detector. ${error.message}`);
+        updateLoadingStep('step-detect', 'idle');
+        return false;
       }
     }
     
-    // Function to run the OpenAPI builder
     async function runOpenAPIBuilder() {
       try {
-        document.getElementById('builder-loading').style.display = 'flex';
+        const builderBtn = document.getElementById('run-builder-button');
+        if (builderBtn) builderBtn.classList.add('loading');
+        
+        updateLoadingStep('step-build', 'active');
         hideNotifications();
         
-        // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
         
         if (!basePath) {
@@ -1472,40 +1772,39 @@
         
         const data = await response.json();
         
-        document.getElementById('builder-loading').style.display = 'none';
+        if (builderBtn) builderBtn.classList.remove('loading');
         showSuccess('OpenAPI specifications generated successfully.');
+        updateLoadingStep('step-build', 'completed');
         
-        // Reload frameworks
-        loadFrameworks();
+        return true;
       } catch (error) {
         console.error('Error running builder:', error);
-        document.getElementById('builder-loading').style.display = 'none';
+        const builderBtn = document.getElementById('run-builder-button');
+        if (builderBtn) builderBtn.classList.remove('loading');
+        
         showError(`Failed to generate OpenAPI specifications. ${error.message}`);
+        updateLoadingStep('step-build', 'idle');
+        return false;
       }
     }
 
-    // Function to show error notification
     function showError(message) {
       showNotification(message, 'error');
     }
     
-    // Function to show success notification
     function showSuccess(message) {
       showNotification(message, 'success');
     }
     
-    // Function to hide all notifications
     function hideNotifications() {
       document.getElementById('notification').style.display = 'none';
     }
 
-    // Function to format the selected option
     function updateSelectedOption() {
       const frameworkSelect = document.getElementById('framework-selector');
       const selectedOption = frameworkSelect.options[frameworkSelect.selectedIndex];
       
       if (selectedOption && selectedOption.value) {
-        // Extract folder name and framework from the text
         const text = selectedOption.text;
         const match = text.match(/^(.+?)\s+\((.+?)\)$/);
         
@@ -1513,18 +1812,15 @@
           const folderName = match[1];
           const framework = match[2];
           
-          // Create a formatted display
           const displayText = `
             <span class="selected-folder">${folderName}</span>
             <span class="selected-framework">${framework}</span>
           `;
           
-          // Find any existing formatted display and update it
           const container = document.getElementById('framework-selector-container');
           let displayElement = container.querySelector('.selected-display');
           
           if (!displayElement) {
-            // Create the display element if it doesn't exist
             displayElement = document.createElement('div');
             displayElement.className = 'selected-display';
             displayElement.style.display = 'none';
@@ -1536,32 +1832,80 @@
       }
     }
 
-    // Function to open the configuration panel
     function openConfigPanel(index) {
       if (index < 0 || index >= configData.length) return;
       
       const config = configData[index];
       
-      // Fill the form fields
       document.getElementById('config-path').value = config.path || '';
-      document.getElementById('config-language').value = config.language || '';
-      document.getElementById('config-framework').value = config.framework || '';
+      
+      const languageSelect = document.getElementById('config-language');
+      const configLanguage = config.language || '';
+      
+      let languageFound = false;
+      for (let i = 0; i < languageSelect.options.length; i++) {
+        if (languageSelect.options[i].value.toLowerCase() === configLanguage.toLowerCase()) {
+          languageSelect.selectedIndex = i;
+          languageFound = true;
+          break;
+        }
+      }
+      
+      if (!languageFound && configLanguage) {
+        for (let i = 0; i < languageSelect.options.length; i++) {
+          if (languageSelect.options[i].value === 'Other') {
+            languageSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+      
+      // Set framework dropdown value
+      const frameworkSelect = document.getElementById('config-framework');
+      const configFramework = config.framework || '';
+      
+      // First check if the framework exists in the options
+      let frameworkFound = false;
+      for (let i = 0; i < frameworkSelect.options.length; i++) {
+        if (frameworkSelect.options[i].value.toLowerCase() === configFramework.toLowerCase()) {
+          frameworkSelect.selectedIndex = i;
+          frameworkFound = true;
+          break;
+        }
+      }
+      
+      // If not found, add the current framework as a custom option
+      if (!frameworkFound && configFramework) {
+        // Add the custom framework as a new option
+        const customOption = document.createElement('option');
+        customOption.value = configFramework;
+        customOption.text = configFramework;
+        
+        // Add it after the last framework but before "Other"
+        const otherOptionIndex = Array.from(frameworkSelect.options).findIndex(option => option.value === 'Other');
+        if (otherOptionIndex > 0) {
+          frameworkSelect.insertBefore(customOption, frameworkSelect.options[otherOptionIndex]);
+        } else {
+          frameworkSelect.add(customOption);
+        }
+        
+        // Select the new custom option
+        customOption.selected = true;
+      }
+      
       document.getElementById('config-main-file').value = config.main_file || '';
       document.getElementById('config-port').value = config.port || '';
       document.getElementById('config-openapi-path').value = config.openapi_path || '';
       
-      // Show the panel and overlay
       document.getElementById('overlay').style.display = 'block';
       document.getElementById('config-panel').style.display = 'block';
     }
     
-    // Function to close the configuration panel
     function closeConfigPanel() {
       document.getElementById('overlay').style.display = 'none';
       document.getElementById('config-panel').style.display = 'none';
     }
     
-    // Function to save the configuration
     async function saveConfig() {
       if (currentConfigIndex < 0) return;
       
@@ -1575,7 +1919,6 @@
       };
       
       try {
-        // Get basePath from URL parameters
         const basePath = getUrlParameter('basePath');
         
         if (!basePath) {
@@ -1599,24 +1942,19 @@
           throw new Error('Failed to update configuration');
         }
         
-        // Update the local configData
         configData[currentConfigIndex] = updatedConfig;
         
         closeConfigPanel();
         showSuccess('Configuration updated successfully');
         
-        // Store current selection before reloading
         const currentSelectedPath = document.getElementById('framework-selector').value;
         
-        // Reload frameworks to update the UI
         await loadFrameworks();
         
-        // Restore the selection after reloading
         const frameworkSelect = document.getElementById('framework-selector');
         for (let i = 0; i < frameworkSelect.options.length; i++) {
           if (frameworkSelect.options[i].value === currentSelectedPath) {
             frameworkSelect.selectedIndex = i;
-            // Trigger change event to update everything else
             frameworkSelect.dispatchEvent(new Event('change'));
             break;
           }
@@ -1627,7 +1965,6 @@
       }
     }
 
-    // Function to update project details display
     function updateProjectDetails(index) {
       const detailsPanel = document.getElementById('project-details');
       
@@ -1638,39 +1975,120 @@
       
       const config = configData[index];
       
-      // Fill in the details
       document.getElementById('details-language').textContent = config.language || '-';
       document.getElementById('details-framework').textContent = config.framework || '-';
       document.getElementById('details-main-file').textContent = config.main_file || '-';
       document.getElementById('details-port').textContent = config.port || '-';
       document.getElementById('details-path').textContent = config.path || '-';
       
-      // Show the panel
       detailsPanel.style.display = 'block';
     }
 
-    // Setup accordion functionality
     function setupAccordion() {
       const accordionHeader = document.getElementById('main-accordion-header');
       const accordionContent = document.getElementById('main-accordion-content');
       
-      // Initially expanded
       accordionContent.style.display = 'block';
       
       accordionHeader.addEventListener('click', function() {
         const isCollapsed = this.classList.contains('collapsed');
         
         if (isCollapsed) {
-          // Expand
           accordionContent.style.display = 'block';
           this.classList.remove('collapsed');
         } else {
-          // Collapse
           accordionContent.style.display = 'none';
           this.classList.add('collapsed');
         }
       });
     }
+    
+    // Check if swagger config file already exists in the source path
+    async function checkConfigExists() {
+      try {
+        const basePath = getUrlParameter('basePath');
+        
+        if (!basePath) {
+          return false;
+        }
+        
+        // Try to fetch the config directly
+        const response = await fetch(`/config?basePath=${encodeURIComponent(basePath)}`);
+        
+        if (!response.ok) {
+          return false;
+        }
+        
+        const data = await response.json();
+        
+        // If we got data and it has at least one entry, config exists
+        return Array.isArray(data) && data.length > 0;
+      } catch (error) {
+        console.error('Error checking if config exists:', error);
+        return false;
+      }
+    }
   </script>
+  
+  <!-- Global Loading Overlay -->
+  <div class="loading-overlay" id="global-loading">
+    <div class="loading-progress">
+      <div class="loading-title">Processing Project</div>
+      
+      <div class="loading-spinner-container">
+        <div class="pulse-spinner">
+          <div class="pulse-dot"></div>
+          <div class="pulse-dot"></div>
+          <div class="pulse-dot"></div>
+          <div class="pulse-dot"></div>
+        </div>
+      </div>
+      
+      <div class="loading-progress-bar">
+        <div class="loading-progress-fill" id="loading-progress-fill"></div>
+      </div>
+      
+      <div class="loading-steps">
+        <div class="loading-step idle" id="step-detect">
+          <div class="loading-step-icon">
+            <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 6v6l4 2"></path>
+            </svg>
+            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <span>Detecting Frameworks</span>
+        </div>
+        
+        <div class="loading-step idle" id="step-build">
+          <div class="loading-step-icon">
+            <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 6v6l4 2"></path>
+            </svg>
+            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <span>Building OpenAPI Specs</span>
+        </div>
+        
+        <div class="loading-step idle" id="step-load">
+          <div class="loading-step-icon">
+            <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 6v6l4 2"></path>
+            </svg>
+            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <span>Loading Specifications</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
