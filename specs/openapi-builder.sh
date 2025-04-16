@@ -109,6 +109,13 @@ get_spec_generator() {
   cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"spec_creator\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
 }
 
+# Function to extract virtual environment path from spec_generator.config.json
+get_venv_path() {
+  local framework=$1
+  # Look for the framework in the venv_paths object
+  cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"venv_paths\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
+}
+
 # Simple function to store framework and openapi path
 store_openapi_path() {
   local framework=$1
@@ -127,6 +134,7 @@ process_framework() {
   local path=$(get_framework_path "$framework")
   local main_file=$(get_main_file "$framework")
   local generator=$(get_spec_generator "$framework")
+  local venv_path=$(get_venv_path "$framework")
   
   if [ -z "$path" ]; then
     echo "❌ Path not found for $framework in $SWAGGER_CONFIG"
@@ -154,20 +162,40 @@ process_framework() {
     # Define the openapi.json output path
     OPENAPI_OUT_PATH="$path/openapi.json"
     
-    # Use framework-specific logic for handling main file paths
+    # Use framework-specific logic for handling virtual environments and main file paths
     case "$framework" in
       "spring")
         java -jar "$GENERATOR_NAME" "$path" "$OPENAPI_OUT_PATH"
         ;;
       "express.js")
+        # For express.js, use node_modules if available
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
+          echo "Using Node.js packages from: $venv_path"
+          export PATH="$venv_path/.bin:$PATH"
+        fi
         # For express.js, main file is "server.js"
         node "$GENERATOR_NAME" -e "$path/server.js" -o "$OPENAPI_OUT_PATH"
         ;;
       "flask")
+        # For flask, activate virtual environment if available
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
+          echo "Activating Python virtual environment: $venv_path"
+          source "$venv_path/bin/activate"
+        fi
         # For flask, main file is "main_.py"
         python3 "$GENERATOR_NAME" -e "$path/main_.py" -o "$OPENAPI_OUT_PATH"
+        # Deactivate virtual environment if it was activated
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
+          deactivate 2>/dev/null || true
+        fi
         ;;
       "ruby-on-rails")
+        # For Rails, use bundler if virtual environment is available
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ] && [ -d "$venv_path" ]; then
+          echo "Using Ruby environment from: $venv_path"
+          export GEM_HOME="$venv_path"
+          export PATH="$venv_path/bin:$PATH"
+        fi
         # For Rails, use the path directly
         ruby "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
         ;;
