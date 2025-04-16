@@ -69,7 +69,7 @@ echo "Source directory: $SOURCE_DIR"
 echo "Output directory: $OUTPUT_DIR"
 
 # Array to store gitignore patterns
-declare -a GITIGNORE_PATTERNS
+declare -a GITIGNORE_PATTERNS=()
 
 # Function to load gitignore patterns from a directory
 load_gitignore_patterns() {
