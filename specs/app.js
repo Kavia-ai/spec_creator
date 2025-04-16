@@ -81,8 +81,15 @@ app.use('/proxy/:framework/*', async (req, res) => {
   try {
     // Extract the framework name and path
     const frameworkName = req.params.framework;
-    // Extract the path after the framework name
-    const pathAfterFramework = req.url.substring(req.url.indexOf(frameworkName) + frameworkName.length);
+    
+    // Extract the path after the framework name correctly
+    // This needs to include the entire URL path after /proxy/framework/
+    let pathAfterFramework = req.path.substring(req.path.indexOf(frameworkName) + frameworkName.length);
+    
+    // Make sure the path starts with a slash
+    if (!pathAfterFramework.startsWith('/')) {
+      pathAfterFramework = '/' + pathAfterFramework;
+    }
     
     console.log(`Proxy request for framework: ${frameworkName}, path: ${pathAfterFramework}`);
     
@@ -122,6 +129,22 @@ app.use('/proxy/:framework/*', async (req, res) => {
       method: req.method,
       headers: { ...req.headers, host: targetHost },
     };
+    
+    // Include query parameters in the proxied request (except basePath)
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (key !== 'basePath') {
+        queryParams.append(key, value);
+      }
+    }
+    
+    // Add query parameters to the path if there are any
+    const queryString = queryParams.toString();
+    if (queryString) {
+      options.path += (options.path.includes('?') ? '&' : '?') + queryString;
+    }
+    
+    console.log(`Final proxy request path: ${options.path}`);
     
     // Create the proxy request
     const proxyReq = http.request(options, (proxyRes) => {
@@ -198,8 +221,10 @@ app.use('/proxy-alt/:framework', async (req, res, next) => {
       target: `http://localhost:${port}`,
       changeOrigin: true,
       pathRewrite: function (path) {
-        // Remove the /proxy/{framework} part
-        return path.substring(path.indexOf(frameworkName) + frameworkName.length) || '/';
+        // More reliable path rewriting
+        const pathParts = path.split(`/proxy-alt/${frameworkName}`);
+        // Return the path after the framework, or '/' if there's nothing
+        return pathParts.length > 1 ? pathParts[1] || '/' : '/';
       },
       onProxyReq: (proxyReq, req) => {
         // If there's a body and it's a JSON body, restream it
