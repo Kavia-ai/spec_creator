@@ -4,6 +4,8 @@ Non-invasive OpenAPI specification generator for Flask applications.
 This script inspects a Flask application without modifying its code.
 
 Usage: python openapi_spec_creator.py -e <flask_app_file> -o <output_file>
+
+Note: This generator sets the base path to '/proxy' for all endpoints.
 """
 import sys
 import os
@@ -112,12 +114,8 @@ def generate_openapi_spec(app):
         plugins=[MarshmallowPlugin()],
     )
     
-    # Add server information
+    # Get the spec dictionary
     spec_dict = spec.to_dict()
-    spec_dict["servers"] = [{
-        "url": "http://localhost:5000",
-        "description": "Local development server"
-    }]
     
     # Extract routes
     routes = extract_route_info(app)
@@ -142,8 +140,17 @@ def generate_openapi_spec(app):
             operations={route["method"]: operation}
         )
     
-    # Update the spec with server information
+    # Update the spec with the latest changes
     spec_dict.update(spec.to_dict())
+    
+    # Add base path as /proxy
+    spec_dict["servers"] = [
+        {
+            "url": "/proxy/flask",
+            "description": "API with base path"
+        }
+    ]
+    
     return spec_dict
 
 def parse_arguments():

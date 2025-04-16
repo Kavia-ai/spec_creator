@@ -2,6 +2,8 @@
 # openapi_spec_creator.rb
 # Non-invasive OpenAPI specification generator for Rails applications
 # Usage: ruby openapi_spec_creator.rb -e /path/to/rails/app -o /path/to/output.json
+#
+# Note: This generator sets the base path to '/proxy' for all endpoints
 
 require 'yaml'
 require 'json'
@@ -270,8 +272,8 @@ class FixedRailsOpenAPIGenerator
       },
       servers: [
         {
-          url: 'http://localhost:3000',
-          description: 'Development server'
+          url: '/proxy/ruby-on-rails',
+          description: 'API with base path'
         }
       ],
       paths: generate_paths,
@@ -287,6 +289,7 @@ class FixedRailsOpenAPIGenerator
     File.write(output_path, JSON.pretty_generate(spec))
     
     puts "✅ Successfully generated OpenAPI specification at #{output_path}"
+    puts "   Base path set to '/proxy/ruby-on-rails'"
     puts "   Note: You may want to validate this specification using a tool like swagger-cli"
   end
 

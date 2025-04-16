@@ -1,0 +1,39 @@
+[
+  {
+    "path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/java-spring",
+    "relative_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/java-spring/",
+    "language": "java",
+    "framework": "spring",
+    "main_file": "/src/main/java/com/example/demo/DemoApplication.java",
+    "port": "8081"
+  },
+  {
+    "path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/nodejs-express",
+    "relative_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/nodejs-express/",
+    "language": "javascript",
+    "framework": "express.js",
+    "main_file": "server.js",
+    "port": "8081",
+    "openapi_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/nodejs-express/openapi.json"
+  },
+  {
+    "path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/python-flask",
+    "relative_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/python-flask/",
+    "language": "python",
+    "framework": "flask",
+    "main_file": "main_.py",
+    "port": "5001",
+    "openapi_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/python-flask/openapi.json",
+    "folder_name": "python-flask",
+    "basePath": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source"
+  },
+  {
+    "path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/ruby-rails",
+    "relative_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/ruby-rails/",
+    "language": "ruby",
+    "framework": "ruby-on-rails",
+    "main_file": "config/application.rb",
+    "port": "3000",
+    "openapi_path": "/Volumes/Praveen/Skillrank/kavia/SwaggerOpenApi/OPENAPI/source/ruby-rails/openapi.json"
+  }
+]

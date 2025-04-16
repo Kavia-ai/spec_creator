@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
-      "description": "Development server"
+      "url": "/proxy/ruby-on-rails",
+      "description": "API with base path"
     }
   ],
   "paths": {

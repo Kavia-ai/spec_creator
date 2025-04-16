@@ -1,8 +1,72 @@
 #!/bin/bash
 
-# Initialize the JSON file with an opening bracket
-echo "[" > swagger.config.json
-first_entry=true
+# Display usage instructions
+show_usage() {
+  echo "Usage: $0 [OPTIONS] [SOURCE_DIR]"
+  echo "Options:"
+  echo "  -s, --source DIR     Directory to scan for frameworks"
+  echo "  -o, --output DIR     Directory to save swagger.config.json (default: same as source)"
+  echo "  -h, --help           Show this help message"
+  echo ""
+  echo "You can also provide the source directory as a positional argument:"
+  echo "  $0 /path/to/source"
+  exit 1
+}
+
+# Parse command line arguments
+SOURCE_DIR="."
+OUTPUT_DIR=""
+
+# First check if there's a positional argument and no options
+if [ $# -eq 1 ] && [[ ! "$1" == -* ]]; then
+  SOURCE_DIR="$1"
+  OUTPUT_DIR="$SOURCE_DIR"
+else
+  # If we have options, parse them
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -s|--source)
+        SOURCE_DIR="$2"
+        shift 2
+        ;;
+      -o|--output)
+        OUTPUT_DIR="$2"
+        shift 2
+        ;;
+      -h|--help)
+        show_usage
+        ;;
+      *)
+        if [[ ! "$1" == -* ]] && [ -z "$SOURCE_DIR" ]; then
+          SOURCE_DIR="$1"
+          shift
+        else
+          echo "Unknown option: $1"
+          show_usage
+        fi
+        ;;
+    esac
+  done
+fi
+
+# If output directory is not specified, use the source directory
+if [ -z "$OUTPUT_DIR" ]; then
+  OUTPUT_DIR="$SOURCE_DIR"
+fi
+
+# Ensure directories exist
+if [ ! -d "$SOURCE_DIR" ]; then
+  echo "Error: Source directory '$SOURCE_DIR' does not exist."
+  exit 1
+fi
+
+if [ ! -d "$OUTPUT_DIR" ]; then
+  echo "Creating output directory: $OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR"
+fi
+
+echo "Source directory: $SOURCE_DIR"
+echo "Output directory: $OUTPUT_DIR"
 
 # Array to store gitignore patterns
 declare -a GITIGNORE_PATTERNS
@@ -343,31 +407,59 @@ check_frameworks() {
     if [ "$first_entry" = true ]; then
       first_entry=false
     else
-      echo "," >> swagger.config.json
+      echo "," >> "$OUTPUT_DIR/swagger.config.json"
     fi
-    echo "  {\"path\":\"$ABSOLUTE_PATH\",\"relative_path\":\"$RELATIVE_PATH\",\"language\":\"$language\",\"framework\":\"$framework\",\"main_file\":\"$main_file\",\"port\":\"$port\"}" >> swagger.config.json
+    echo "  {\"path\":\"$ABSOLUTE_PATH\",\"relative_path\":\"$RELATIVE_PATH\",\"language\":\"$language\",\"framework\":\"$framework\",\"main_file\":\"$main_file\",\"port\":\"$port\"}" >> "$OUTPUT_DIR/swagger.config.json"
+    echo "✅ Detected $framework framework in $DIR - added to config"
+  else
+    echo "❌ No framework detected in $DIR"
   fi
 }
 
 # Main script logic
-DIR=${1:-.}
+DIR="$SOURCE_DIR"
 
 # Load gitignore patterns
 load_gitignore_patterns "$DIR"
 
+# Initialize the JSON file with an opening bracket
+echo "Creating config file at: $OUTPUT_DIR/swagger.config.json"
+echo "[" > "$OUTPUT_DIR/swagger.config.json"
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to create the config file. Please check if the directory is writable."
+  exit 1
+fi
+first_entry=true
+
+# First check the main directory
 check_frameworks "$DIR"
 
-# If no framework is found in the main directory, check subdirectories
-if [ -z "$framework" ]; then
-  for subdir in "$DIR"/*/; do
+# Always check subdirectories regardless of whether a framework was found in the main directory
+echo "Scanning subdirectories..."
+for subdir in "$DIR"/*/; do
+  # Check if the subdir exists (the glob might not match anything)
+  if [ -d "$subdir" ]; then
     # Skip if directory is gitignored
     if ! should_ignore "$subdir" "$DIR"; then
       check_frameworks "$subdir"
     else
       echo "Skipping gitignored directory: $subdir"
     fi
-  done
-fi
+  fi
+done
 
 # Close the JSON array
-echo "]" >> swagger.config.json
+echo "]" >> "$OUTPUT_DIR/swagger.config.json"
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to finalize the config file."
+  exit 1
+fi
+
+# Verify file was created properly
+if [ ! -s "$OUTPUT_DIR/swagger.config.json" ]; then
+  echo "WARNING: Config file was created but appears to be empty."
+else
+  echo "✅ Complete! Configuration saved to $OUTPUT_DIR/swagger.config.json"
+  # Print file size for debugging
+  ls -la "$OUTPUT_DIR/swagger.config.json"
+fi

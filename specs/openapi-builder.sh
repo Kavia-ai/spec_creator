@@ -3,10 +3,39 @@
 # Build OpenAPI Specifications for all frameworks defined in swagger.config.json
 # using generators defined in spec_generator.config.json
 
+# Display usage instructions
+show_usage() {
+  echo "Usage: $0 [OPTIONS]"
+  echo "Options:"
+  echo "  -c, --config FILE    Path to swagger.config.json file (default: swagger.config.json in current dir)"
+  echo "  -h, --help           Show this help message"
+  exit 1
+}
+
+# Parse command line arguments
+SWAGGER_CONFIG="swagger.config.json"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -c|--config)
+      SWAGGER_CONFIG="$2"
+      shift 2
+      ;;
+    -h|--help)
+      show_usage
+      ;;
+    *)
+      echo "Unknown option: $1"
+      show_usage
+      ;;
+  esac
+done
+
 # Define paths
 SPEC_GEN_CONFIG="spec_generator.config.json"
-SWAGGER_CONFIG="swagger.config.json"
 TEMP_OUTPUT_FILE="openapi_paths.txt"
+
+echo "Using swagger config file: $SWAGGER_CONFIG"
 
 # Check if spec generator config file exists
 if [ ! -f "$SPEC_GEN_CONFIG" ]; then
@@ -18,23 +47,59 @@ fi
 if [ ! -f "$SWAGGER_CONFIG" ]; then
   echo "Warning: $SWAGGER_CONFIG not found. Creating an empty file."
   touch "$SWAGGER_CONFIG"
+else
+  echo "Config file found: $SWAGGER_CONFIG"
+  # Debug: Print file size
+  ls -la "$SWAGGER_CONFIG"
+  # Debug: Show first few lines of the file
+  echo "First 10 lines of config file:"
+  head -10 "$SWAGGER_CONFIG"
 fi
 
 # Function to extract all frameworks from swagger.config.json
 get_all_frameworks() {
-  grep -o "\"framework\":\"[^\"]*\"" "$SWAGGER_CONFIG" | cut -d'"' -f4
+  # First try using jq if available
+  if command -v jq >/dev/null 2>&1; then
+    jq -r '.[].framework' "$SWAGGER_CONFIG" 2>/dev/null
+    return
+  fi
+  
+  # Fallback to a more robust grep approach that handles multiline entries
+  cat "$SWAGGER_CONFIG" | tr -d '\n' | grep -o '"framework":"[^"]*"' | cut -d'"' -f4
 }
 
 # Function to extract framework path from swagger.config.json
 get_framework_path() {
   local framework=$1
-  grep -A 5 "\"framework\":\"$framework\"" "$SWAGGER_CONFIG" | grep "\"path\":" | head -1 | cut -d'"' -f4
+  
+  # First try using jq if available
+  if command -v jq >/dev/null 2>&1; then
+    jq -r ".[] | select(.framework == \"$framework\") | .path" "$SWAGGER_CONFIG" 2>/dev/null
+    return
+  fi
+  
+  # Fallback method with grep and sed
+  # Convert file to single line and extract the entire object containing the framework
+  local json_obj=$(cat "$SWAGGER_CONFIG" | tr -d '\n' | grep -o "{[^{]*\"framework\":\"$framework\"[^}]*}")
+  # Then extract the path field
+  echo "$json_obj" | grep -o '"path":"[^"]*"' | cut -d'"' -f4
 }
 
 # Function to extract main file from swagger.config.json
 get_main_file() {
   local framework=$1
-  grep -A 5 "\"framework\":\"$framework\"" "$SWAGGER_CONFIG" | grep "\"main_file\":" | head -1 | cut -d'"' -f4
+  
+  # First try using jq if available
+  if command -v jq >/dev/null 2>&1; then
+    jq -r ".[] | select(.framework == \"$framework\") | .main_file" "$SWAGGER_CONFIG" 2>/dev/null
+    return
+  fi
+  
+  # Fallback method with grep and sed
+  # Convert file to single line and extract the entire object containing the framework
+  local json_obj=$(cat "$SWAGGER_CONFIG" | tr -d '\n' | grep -o "{[^{]*\"framework\":\"$framework\"[^}]*}")
+  # Then extract the main_file field
+  echo "$json_obj" | grep -o '"main_file":"[^"]*"' | cut -d'"' -f4
 }
 
 # Function to extract spec generator from spec_generator.config.json
@@ -135,43 +200,136 @@ process_framework() {
 
 # Update the swagger.config.json file with new OpenAPI paths
 update_swagger_config() {
-  echo "Updating swagger.config.json with OpenAPI paths..."
+  echo "Updating original config file at: $ORIGINAL_CONFIG"
   
-  # Create a temporary file to hold the updated JSON
-  local temp_file="swagger.config.temp.json"
-  cp "$SWAGGER_CONFIG" "$temp_file"
+  # Debug: Show the paths we're trying to add
+  echo "OpenAPI paths to add:"
+  cat "$TEMP_OUTPUT_FILE"
   
-  # Process each openapi path
-  while IFS=: read -r framework openapi_path; do
-    # Skip empty lines
-    if [ -z "$framework" ]; then
-      continue
-    fi
+  # Check if jq is available for proper JSON manipulation
+  if command -v jq >/dev/null 2>&1; then
+    echo "Using jq for JSON updates"
     
-    # Escape forward slashes in the path for sed
-    local escaped_path=$(echo "$openapi_path" | sed 's/\//\\\//g')
+    # Create a temp file to hold our updated JSON
+    local temp_file="swagger.config.temp.json"
+    cp "$SWAGGER_CONFIG" "$temp_file"
     
-    # Check if openapi_path field already exists for this framework
-    if grep -q "\"framework\":\"$framework\".*openapi_path" "$temp_file"; then
-      # Update existing openapi_path
-      sed -i.bak "s/\"openapi_path\":.*,/\"openapi_path\":\"$escaped_path\",/" "$temp_file"
+    # Create an associative array of frameworks to paths (if bash version supports it)
+    declare -A openapi_paths 2>/dev/null
+    if [ $? -eq 0 ]; then
+      # Bash version supports associative arrays
+      while IFS=: read -r framework path; do
+        [ -n "$framework" ] && openapi_paths["$framework"]="$path"
+      done < "$TEMP_OUTPUT_FILE"
+      
+      # Process the JSON file
+      jq_script=""
+      for framework in "${!openapi_paths[@]}"; do
+        path="${openapi_paths[$framework]}"
+        echo "Processing with jq: $framework -> $path"
+        jq_script="$jq_script | map(if .framework == \"$framework\" then . + {\"openapi_path\": \"$path\"} else . end)"
+      done
+      
+      # Remove the leading pipe
+      jq_script="${jq_script#" | "}"
+      
+      # Apply the jq transformation
+      jq "$jq_script" "$SWAGGER_CONFIG" > "$temp_file"
     else
-      # Add new openapi_path field - we add it after the port field
-      sed -i.bak "s/\"framework\":\"$framework\".*\"port\":\"[0-9]*\"/&,\"openapi_path\":\"$escaped_path\"/" "$temp_file"
+      # Fallback for bash versions without associative arrays
+      # Process each line and use a separate jq call
+      while IFS=: read -r framework path; do
+        if [ -n "$framework" ] && [ -n "$path" ]; then
+          echo "Updating $framework with path $path"
+          # Escape quotes in path
+          escaped_path=$(echo "$path" | sed 's/"/\\"/g')
+          # Create a temp file for each iteration
+          jq "map(if .framework == \"$framework\" then . + {\"openapi_path\": \"$escaped_path\"} else . end)" "$temp_file" > "${temp_file}.new"
+          mv "${temp_file}.new" "$temp_file"
+        fi
+      done < "$TEMP_OUTPUT_FILE"
     fi
     
-    # Remove the backup file created by sed
-    rm -f "${temp_file}.bak"
-  done < "$TEMP_OUTPUT_FILE"
+    # Move the result back to the original file
+    mv "$temp_file" "$ORIGINAL_CONFIG"
+    echo "✅ Updated config file using jq"
+  else
+    echo "jq not available, using sed for updates (less reliable)"
+    
+    # Create a temporary file to hold the updated JSON
+    local temp_file="swagger.config.temp.json"
+    cp "$SWAGGER_CONFIG" "$temp_file"
+    
+    # Process each openapi path
+    while IFS=: read -r framework openapi_path; do
+      # Skip empty lines
+      if [ -z "$framework" ]; then
+        continue
+      fi
+      
+      echo "Adding path for $framework: $openapi_path"
+      
+      # Escape forward slashes in the path for sed
+      local escaped_path=$(echo "$openapi_path" | sed 's/\//\\\//g')
+      
+      # Try multiple sed patterns to handle different JSON formats
+      # Try to update existing openapi_path first
+      if grep -q "\"framework\":\"$framework\".*\"openapi_path\"" "$temp_file"; then
+        echo "Updating existing openapi_path for $framework"
+        # Update existing openapi_path - handle JSON formatting variations
+        sed -i.bak "s|\"openapi_path\"[[:space:]]*:[[:space:]]*\"[^\"]*\"|\"openapi_path\":\"$escaped_path\"|g" "$temp_file"
+      else
+        echo "Adding new openapi_path for $framework"
+        # Try different sed patterns
+        # Pattern 1: Look for port field at end of line
+        sed -i.bak "s|\"port\"[[:space:]]*:[[:space:]]*\"[0-9]*\"[[:space:]]*$|&,\"openapi_path\":\"$escaped_path\"|g" "$temp_file"
+        # Pattern 2: Look for port field followed by comma
+        sed -i.bak "s|\"port\"[[:space:]]*:[[:space:]]*\"[0-9]*\"[[:space:]]*,|\"port\":\"[0-9]*\",\"openapi_path\":\"$escaped_path\",|g" "$temp_file"
+        # Pattern 3: Look for framework and add after its closing brace
+        sed -i.bak "s|\"framework\":\"$framework\".*}|&,\"openapi_path\":\"$escaped_path\"|g" "$temp_file"
+      fi
+      
+      # Remove the backup file created by sed
+      rm -f "${temp_file}.bak"
+    done < "$TEMP_OUTPUT_FILE"
+    
+    # Always write back to the original config path
+    mv "$temp_file" "$ORIGINAL_CONFIG"
+    echo "✅ Updated config file using sed"
+  fi
   
-  # Replace the original config with the updated one
-  mv "$temp_file" "$SWAGGER_CONFIG"
-  
-  echo "✅ Updated $SWAGGER_CONFIG with OpenAPI specification paths"
+  # Debug: Show the updated file
+  echo "Updated JSON content (first 20 lines):"
+  head -20 "$ORIGINAL_CONFIG"
 }
 
 # Clean up any previous run
 rm -f "$TEMP_OUTPUT_FILE"
+
+# Store the original config path before normalization
+ORIGINAL_CONFIG="$SWAGGER_CONFIG"
+
+# Normalize the JSON file to make it easier to parse
+echo "Normalizing JSON config file..."
+TEMP_JSON_FILE="swagger.config.normalized.json"
+if command -v jq >/dev/null 2>&1; then
+  # Use jq to normalize if available
+  jq '.' "$SWAGGER_CONFIG" > "$TEMP_JSON_FILE" 2>/dev/null
+  if [ $? -eq 0 ]; then
+    echo "JSON normalized with jq"
+    SWAGGER_CONFIG="$TEMP_JSON_FILE"
+  else
+    echo "jq failed to parse the JSON, using original file"
+    # Create a normalized version by removing whitespace between lines
+    cat "$SWAGGER_CONFIG" | tr -d '\n' | sed 's/},{/},\n{/g' > "$TEMP_JSON_FILE"
+    SWAGGER_CONFIG="$TEMP_JSON_FILE"
+  fi
+else
+  # Create a normalized version by removing whitespace between lines
+  echo "jq not available, using basic normalization"
+  cat "$SWAGGER_CONFIG" | tr -d '\n' | sed 's/},{/},\n{/g' > "$TEMP_JSON_FILE"
+  SWAGGER_CONFIG="$TEMP_JSON_FILE"
+fi
 
 # Process all frameworks defined in swagger.config.json
 FRAMEWORKS=$(get_all_frameworks)
@@ -186,6 +344,11 @@ done
 if [ -f "$TEMP_OUTPUT_FILE" ]; then
   update_swagger_config
   rm -f "$TEMP_OUTPUT_FILE"
+fi
+
+# Clean up temporary files
+if [ -f "$TEMP_JSON_FILE" ]; then
+  rm -f "$TEMP_JSON_FILE"
 fi
 
 echo "OpenAPI specification generation complete!"
