@@ -7,13 +7,14 @@
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui.css" />
   <style>
     :root {
-      --primary-color: #3b82f6;
-      --primary-dark: #2563eb;
+      --primary-color: #f97316; /* Changed from blue to orange */
+      --primary-dark: #ea580c; /* Darker orange */
       --secondary-color: #1e293b;
       --text-color: #1e293b;
       --light-gray: #f8fafc;
       --border-color: #e2e8f0;
       --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --accent-blue: #3b82f6; /* Added blue as accent color */
     }
     
     * {
@@ -124,7 +125,7 @@
       font-size: 0.8rem;
       color: #64748b;
       position: absolute;
-      right: 1rem;
+      right: 0.75rem;
       top: 50%;
       transform: translateY(-50%);
       pointer-events: none;
@@ -157,7 +158,7 @@
     
     #framework-selector:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
     }
     
     #framework-selector option {
@@ -243,13 +244,13 @@
     }
     
     .notification.success {
-      background-color: #dcfce7;
-      border: 1px solid #bbf7d0;
-      color: #15803d;
+      background-color: rgba(249, 115, 22, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.3);
+      color: var(--primary-dark);
     }
     
     .notification.success::before {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2315803d'%3E%3Cpath d='M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-.997-6l7.07-7.071-1.414-1.414-5.656 5.657-2.829-2.829-1.414 1.414L11.003 16z'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ea580c'%3E%3Cpath d='M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-.997-6l7.07-7.071-1.414-1.414-5.656 5.657-2.829-2.829-1.414 1.414L11.003 16z'/%3E%3C/svg%3E");
     }
     
     .swagger-ui .topbar {
@@ -268,6 +269,7 @@
       border-radius: 0.5rem;
       overflow: hidden;
       min-height: 300px; /* Reduced minimum height */
+      padding: 0;
     }
     
     /* Ensure Swagger UI content is visible */
@@ -439,7 +441,7 @@
     }
     
     .loading-step-icon .check-icon {
-      stroke: #10b981;
+      stroke: var(--primary-color);
       display: none;
     }
     
@@ -485,14 +487,14 @@
       align-items: center;
       gap: 6px;
       padding: 4px 10px;
-      background-color: rgba(59, 130, 246, 0.1);
+      background-color: rgba(249, 115, 22, 0.1);
       border-radius: 4px;
       margin-left: 8px;
       font-size: 0.75rem;
     }
     
     body.dark-mode .inline-loader {
-      background-color: rgba(59, 130, 246, 0.2);
+      background-color: rgba(249, 115, 22, 0.2);
     }
     
     .inline-loader .pulse-dot {
@@ -510,14 +512,14 @@
       margin-top: 0.5rem;
       padding: 0.5rem 0.75rem;
       border-radius: 0.5rem;
-      background-color: rgba(59, 130, 246, 0.08);
+      background-color: rgba(249, 115, 22, 0.08);
       max-width: fit-content;
     }
     
     .loading-spinner {
       width: 1.25rem;
       height: 1.25rem;
-      border: 3px solid rgba(59, 130, 246, 0.2);
+      border: 3px solid rgba(249, 115, 22, 0.2);
       border-radius: 50%;
       border-top-color: var(--primary-color);
       animation: spin 0.8s linear infinite;
@@ -614,22 +616,22 @@
     }
 
     .api-badge.java {
-      background-color: #f59e0b;
+      background-color: var(--primary-color);
       color: white;
     }
 
     .api-badge.javascript {
-      background-color: #10b981;
+      background-color: var(--primary-color);
       color: white;
     }
 
     .api-badge.python {
-      background-color: #3b82f6;
+      background-color: var(--accent-blue);
       color: white;
     }
 
     .api-badge.ruby {
-      background-color: #ef4444;
+      background-color: var(--primary-color);
       color: white;
     }
 
@@ -665,6 +667,8 @@
       position: relative;
       overflow: hidden;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      background-color: var(--primary-color);
+      height: 40px;
     }
     
     .action-button:hover {
@@ -690,7 +694,7 @@
     }
     
     #run-detector-button {
-      background-color: #4f46e5;
+      background-color: var(--primary-color);
       padding-left: 3rem;
     }
     
@@ -699,7 +703,7 @@
     }
     
     #run-builder-button {
-      background-color: #10b981;
+      background-color: var(--primary-color);
       padding-left: 3rem;
     }
     
@@ -708,11 +712,11 @@
     }
     
     body.dark-mode #run-detector-button {
-      background-color: #6366f1;
+      background-color: var(--primary-dark);
     }
     
     body.dark-mode #run-builder-button {
-      background-color: #34d399;
+      background-color: var(--primary-dark);
     }
     
     /* Adjustments for loading indicators within buttons */
@@ -859,7 +863,7 @@
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 500;
-      color: var(--text-color);
+      color: #475569;
     }
     
     .config-input {
@@ -880,7 +884,7 @@
     .config-input:focus {
       outline: none;
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3);
     }
     
     .form-actions {
@@ -918,11 +922,11 @@
     }
     
     .edit-config-button:hover {
-      background-color: rgba(59, 130, 246, 0.1);
+      background-color: rgba(249, 115, 22, 0.1);
     }
     
     body.dark-mode .edit-config-button:hover {
-      background-color: rgba(96, 165, 250, 0.2);
+      background-color: rgba(249, 115, 22, 0.2);
     }
     
     .edit-config-button svg {
@@ -1089,6 +1093,7 @@
     .accordion-header {
       cursor: pointer;
       transition: background-color 0.2s;
+      margin-bottom: 0;
     }
     
     .accordion-header:hover {
@@ -1167,6 +1172,197 @@
     body.dark-mode .section-title {
       color: #e2e8f0;
     }
+
+    /* CSS IMPROVEMENTS FOR BETTER UI - COMPACT LAYOUT */
+    /* Reduce overall spacing */
+    main.container {
+      padding: 0.5rem;
+    }
+    
+    /* Tighten accordion spacing */
+    .accordion-header .form-title {
+      padding: 0.5rem 0.75rem;
+    }
+    
+    /* Reduce project configuration spacing */
+    .project-details {
+      padding: 0.75rem;
+      margin: 0.5rem 0 0.75rem 0;
+    }
+    
+    /* Reduce section title spacing */
+    .section-title {
+      margin: 0.5rem 0 0.25rem;
+      font-size: 0.95rem;
+    }
+    
+    /* Make detail cards more compact */
+    .details-grid {
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .detail-card {
+      padding: 0.5rem;
+    }
+    
+    /* Fix the card-value alignment */
+    .card-value {
+      font-size: 0.9rem;
+    }
+    
+    /* Reduce form field spacing */
+    .form-group {
+      margin-bottom: 0.75rem;
+    }
+    
+    /* Tighten header icon spacing */
+    h3.form-title svg {
+      margin-right: 5px;
+    }
+    
+    /* Reduce details footer spacing */
+    .details-footer {
+      padding-top: 0.5rem;
+    }
+    
+    .footer-item {
+      gap: 0.5rem;
+    }
+    
+    /* More compact form labels */
+    .form-label {
+      margin-bottom: 0.25rem;
+    }
+    
+    /* Tighten spacing on path display */
+    .base-path-display {
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Improve tools buttons layout */
+    .script-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .button-wrapper {
+      flex: 1;
+    }
+    
+    .action-button {
+      font-size: 0.9rem;
+      padding: 0.6rem 0.5rem;
+      width: 100%;
+    }
+    
+    /* Compact form title and remove excessive border */
+    .form-title {
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.25rem;
+    }
+    
+    /* Fix the swagger container spacing */
+    .swagger-container {
+      margin-top: 0.75rem;
+    }
+    
+    /* Reduce input padding */
+    #framework-selector {
+      padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    }
+    
+    /* Add divider after configuration */
+    .project-details {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+    
+    /* Fix spacing around the tools section */
+    .tools-section {
+      margin-top: 0.5rem;
+    }
+    
+    /* Reduce path text font size */
+    #details-path {
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+    
+    /* Additional improvements for compactness */
+    .accordion {
+      margin-bottom: 0.5rem;
+    }
+    
+    .accordion-content {
+      padding: 0.5rem;
+    }
+    
+    /* Make the input form more compact */
+    .input-form {
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+    }
+    
+    /* Reduce margin between form elements */
+    .selector-container {
+      margin-bottom: 0.75rem;
+    }
+    
+    /* Make the whole layout more compact */
+    .accordion > .accordion-header > .form-title {
+      font-size: 1.05rem;
+    }
+    
+    /* Fix path info text */
+    .path-info {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-top: 0.1rem;
+    }
+    
+    /* Fix swagger iframe height for better viewing */
+    #swagger-ui iframe {
+      height: 650px !important; /* Slightly reduced height */
+    }
+    
+    /* Final spacing tweaks */
+    .accordion-header {
+      margin-bottom: 0;
+    }
+    
+    /* Improve button appearance */
+    .action-button {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Fix main container spacing */
+    #main-accordion-content {
+      padding-top: 0;
+    }
+    
+    /* Improve dropdown arrow positioning */
+    .selector-container::after {
+      right: 0.75rem;
+    }
+    
+    /* Remove excess padding around swagger container */
+    .swagger-container {
+      padding: 0;
+    }
+    
+    /* Add shadow to tools to make them stand out */
+    .action-button {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* End of improvements */
   </style>
 </head>
 <body>
@@ -1174,7 +1370,9 @@
     <div class="accordion">
       <div class="accordion-header" id="main-accordion-header">
         <h2 class="form-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-icon"><path d="M4 21v-13a3 3 0 0 1 3-3h5a3 3 0 0 1 3 3v13"></path><path d="M18 21V8"></path><path d="M4 8v-2a2 2 0 0 1 2-2h8"></path><path d="M22 21V7h-6"></path><path d="M18 3v4"></path><path d="M15 5h6"></path></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-icon">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
           Project Configuration and Tools
           <span class="accordion-toggle"></span>
           <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" style="margin-right: 10px;">
@@ -1198,13 +1396,6 @@
       <div class="accordion-content" id="main-accordion-content">
     <div class="input-form">
       <div class="notification" id="notification"></div>
-      
-          <h3 class="form-title" style="border-bottom: 2px solid var(--primary-color); margin-bottom: 1rem;">
-            <img src="kavia_logo.svg" alt="Kavia Logo" height="32" style="vertical-align: middle; margin-right: 10px;">
-            Kavia Swagger View
-            <div style="font-size: 0.75rem; font-weight: 500; color: var(--primary-color);">Workflow Manager</div>
-          </h3>
-          
           <h3 class="section-title">Select OpenAPI Specification</h3>
       <div class="base-path-display">
             Source Path: <span id="base-path-value">Loading...</span>
@@ -1289,7 +1480,7 @@
       </div>
       
           <h3 class="section-title">Tools</h3>
-      <div class="script-buttons">
+      <div class="script-buttons tools-section">
             <div class="button-wrapper">
         <button id="run-detector-button" class="action-button">
           Run Framework Detector
@@ -1320,6 +1511,22 @@
               <div class="loading" id="builder-loading" style="display: none;">
                 <div class="loading-spinner"></div>
                 <span>Generating OpenAPI specs...</span>
+              </div>
+            </div>
+            <div class="button-wrapper">
+        <button id="refresh-button" class="action-button">
+          Refresh OpenAPI Specs
+          <div class="button-loader">
+            <div class="pulse-spinner">
+              <div class="pulse-dot"></div>
+              <div class="pulse-dot"></div>
+              <div class="pulse-dot"></div>
+            </div>
+          </div>
+        </button>
+              <div class="loading" id="refresh-loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <span>Refreshing OpenAPI specs...</span>
               </div>
             </div>
           </div>
@@ -1362,9 +1569,9 @@
           <label for="config-framework">Framework:</label>
           <select id="config-framework" class="config-input">
             <option value="">Select Framework</option>
-            <option value="Express">Express</option>
-            <option value="Flask">Flask</option>
-            <option value="Rails">Ruby on Rails</option>
+            <option value="express.js">Express</option>
+            <option value="flask">Flask</option>
+            <option value="ruby-on-rails">Ruby on Rails</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -1558,38 +1765,59 @@
     }
     
     async function loadSpec(path) {
+      if (!path) {
+        showError('No OpenAPI specification path provided');
+        return;
+      }
+      
       try {
         const loadingSpec = document.getElementById('loading-spec');
         if (loadingSpec) loadingSpec.style.display = 'flex';
         
-        document.getElementById('swagger-ui').innerHTML = '';
         hideNotifications();
         
-        const basePath = getUrlParameter('basePath');
+        // Ensure the swagger container is visible
+        const swaggerContainer = document.getElementById('swagger-container');
+        swaggerContainer.style.display = 'block';
         
+        const basePath = getUrlParameter('basePath');
         if (!basePath) {
           throw new Error('No basePath provided in URL');
         }
         
-        const viewUrl = appendBasePath(`/view?path=${encodeURIComponent(path)}`);
+        console.log('Loading OpenAPI spec from:', path);
         
+        // Create and configure iframe
+        const viewUrl = appendBasePath(`/view?path=${encodeURIComponent(path)}`);
         const iframe = document.createElement('iframe');
         iframe.src = viewUrl;
         iframe.style.width = '100%';
-        iframe.style.height = '800px';
+        iframe.style.height = '650px';
         iframe.style.border = 'none';
         
-        const iframeContainer = document.getElementById('swagger-ui');
-        iframeContainer.innerHTML = '';
-        iframeContainer.appendChild(iframe);
+        // Set up load handlers
+        iframe.onload = () => {
+          console.log('Swagger UI iframe loaded successfully');
+          if (loadingSpec) loadingSpec.style.display = 'none';
+        };
         
-        if (loadingSpec) loadingSpec.style.display = 'none';
-        } catch (error) {
+        // Add error handler
+        iframe.onerror = () => {
+          console.error('Swagger UI iframe failed to load');
+          if (loadingSpec) loadingSpec.style.display = 'none';
+          showError('Failed to load OpenAPI specification iframe');
+        };
+        
+        // Add to DOM
+        const swaggerUi = document.getElementById('swagger-ui');
+        swaggerUi.innerHTML = '';
+        swaggerUi.appendChild(iframe);
+      } catch (error) {
         console.error('Error loading spec:', error);
         if (document.getElementById('loading-spec')) {
           document.getElementById('loading-spec').style.display = 'none';
         }
-        showError(`Failed to load OpenAPI specification. ${error.message}`);
+        showError(`Failed to load OpenAPI specification: ${error.message}`);
       }
     }
     
@@ -1610,9 +1838,7 @@
     
     window.onload = async function() {
       setupThemeToggle();
-      
       setupAccordion();
-      
       fetchBasePath();
       
       // Show global loading
@@ -1646,6 +1872,23 @@
         const frameworkSelect = document.getElementById('framework-selector');
         if (frameworkSelect.options.length > 1) {
           frameworkSelect.selectedIndex = 1;
+          
+          // Get the filepath and manually trigger loadSpec with a delay to ensure DOM is ready
+          const filePath = frameworkSelect.value;
+          if (filePath) {
+            // Set a small delay to ensure everything is initialized properly
+            setTimeout(() => {
+              console.log("Initial load of spec with delay:", filePath);
+              loadSpec(filePath);
+              
+              // Force update of project details
+              const selectedIndex = frameworkSelect.options[frameworkSelect.selectedIndex].dataset.index;
+              currentConfigIndex = selectedIndex !== undefined ? parseInt(selectedIndex) : -1;
+              updateProjectDetails(currentConfigIndex);
+            }, 300);
+          }
+          
+          // Still dispatch change event for other UI elements
           frameworkSelect.dispatchEvent(new Event('change'));
         }
       } else {
@@ -1653,6 +1896,7 @@
         hideGlobalLoading();
       }
       
+      // FRAMEWORK SELECTOR - Single clean event handler
       document.getElementById('framework-selector').addEventListener('change', function() {
         updateSelectedOption();
         const filePath = this.value;
@@ -1663,11 +1907,21 @@
         
         updateProjectDetails(currentConfigIndex);
         
+        // Reset the Swagger UI container
+        document.getElementById('swagger-ui').innerHTML = '';
+        const swaggerContainer = document.getElementById('swagger-container');
+        swaggerContainer.style.display = 'block';
+        
+        // Only load spec if we have a path
         if (filePath) {
           loadSpec(filePath);
+        } else {
+          // Hide container if no spec to display
+          swaggerContainer.style.display = 'none';
         }
       });
       
+      // CLEAN EVENT HANDLERS - no duplicates
       document.getElementById('edit-config-button').addEventListener('click', function() {
         if (currentConfigIndex >= 0) {
           openConfigPanel(currentConfigIndex);
@@ -1677,9 +1931,7 @@
       });
       
       document.getElementById('close-config').addEventListener('click', closeConfigPanel);
-      
       document.getElementById('save-config').addEventListener('click', saveConfig);
-      
       document.getElementById('overlay').addEventListener('click', closeConfigPanel);
       
       document.getElementById('run-detector-button').addEventListener('click', function() {
@@ -1688,6 +1940,56 @@
       
       document.getElementById('run-builder-button').addEventListener('click', function() {
         runOpenAPIBuilder();
+      });
+      
+      // REFRESH BUTTON - Single clean event handler
+      document.getElementById('refresh-button').addEventListener('click', function() {
+        const frameworkSelect = document.getElementById('framework-selector');
+        const selectedFramework = frameworkSelect.selectedIndex;
+        
+        if (selectedFramework <= 0) {
+          showError('Please select a framework first');
+          return;
+        }
+        
+        // Show loading
+        this.classList.add('loading');
+        document.getElementById('refresh-loading').style.display = 'flex';
+        
+        const frameworkIndex = selectedFramework;
+        const basePath = getUrlParameter('basePath');
+        
+        // Call the API to refresh OpenAPI
+        fetch(`/api/refresh-openapi?frameworkIndex=${frameworkIndex}&basePath=${encodeURIComponent(basePath)}`, {
+          method: 'POST'
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Hide loading
+          this.classList.remove('loading');
+          document.getElementById('refresh-loading').style.display = 'none';
+          
+          showSuccess(data.message || 'OpenAPI specification refreshed successfully');
+          
+          // Reload frameworks then restore selection
+          loadFrameworks().then(() => {
+            if (frameworkSelect.options.length > selectedFramework) {
+              frameworkSelect.selectedIndex = selectedFramework;
+              frameworkSelect.dispatchEvent(new Event('change'));
+            }
+          });
+        })
+        .catch(error => {
+          // Hide loading
+          this.classList.remove('loading');
+          document.getElementById('refresh-loading').style.display = 'none';
+          showError('Error refreshing OpenAPI specification: ' + error.message);
+        });
       });
     };
     

@@ -8,17 +8,25 @@ show_usage() {
   echo "Usage: $0 [OPTIONS]"
   echo "Options:"
   echo "  -c, --config FILE    Path to swagger.config.json file (default: swagger.config.json in current dir)"
+  echo "  -b, --build INDEX    Build only the framework at specified INDEX in the config file (1-based index)"
+  echo "                       Can be specified multiple times to build multiple frameworks"
   echo "  -h, --help           Show this help message"
   exit 1
 }
 
 # Parse command line arguments
 SWAGGER_CONFIG="swagger.config.json"
+# Array to store framework indices to build
+FRAMEWORKS_TO_BUILD=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
     -c|--config)
       SWAGGER_CONFIG="$2"
+      shift 2
+      ;;
+    -b|--build)
+      FRAMEWORKS_TO_BUILD+=("$2")
       shift 2
       ;;
     -h|--help)
@@ -612,9 +620,49 @@ FRAMEWORKS=$(get_all_frameworks)
 
 echo "Found frameworks: $FRAMEWORKS"
 
-for framework in $FRAMEWORKS; do
-  process_framework "$framework"
-done
+# Function to get framework at specific index (1-based)
+get_framework_at_index() {
+  local index=$1
+  local count=1
+  
+  for framework in $FRAMEWORKS; do
+    if [ $count -eq $index ]; then
+      echo "$framework"
+      return
+    fi
+    count=$((count + 1))
+  done
+  
+  # Return empty if index is out of bounds
+  echo ""
+}
+
+# If specific frameworks are requested by index, only process those
+if [ ${#FRAMEWORKS_TO_BUILD[@]} -gt 0 ]; then
+  echo "Building only specified frameworks by index: ${FRAMEWORKS_TO_BUILD[*]}"
+  FRAMEWORKS_TO_PROCESS=""
+  
+  for index in "${FRAMEWORKS_TO_BUILD[@]}"; do
+    framework=$(get_framework_at_index "$index")
+    if [ -n "$framework" ]; then
+      echo "Framework at index $index: $framework"
+      FRAMEWORKS_TO_PROCESS="$FRAMEWORKS_TO_PROCESS $framework"
+    else
+      echo "❌ No framework found at index $index"
+    fi
+  done
+  
+  # Process only the specified frameworks
+  for framework in $FRAMEWORKS_TO_PROCESS; do
+    process_framework "$framework"
+  done
+else
+  # Process all frameworks
+  echo "No specific frameworks specified, processing all"
+  for framework in $FRAMEWORKS; do
+    process_framework "$framework"
+  done
+fi
 
 # Update the swagger.config.json with OpenAPI paths
 if [ -f "$TEMP_OUTPUT_FILE" ]; then

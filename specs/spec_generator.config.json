@@ -1,14 +1,14 @@
 {
   "spec_creator":{
     "spring": null,
-    "express.js": "creator/openapi_spec_creator.js",
-    "flask": "creator/openapi_spec_creator.py",
-    "ruby-on-rails": "creator/openapi_spec_creator.rb"
+    "express.js": "creators/node/expressjs_creator.js",
+    "flask": "creators/python/flask_creator.py",
+    "ruby-on-rails": "creators/rails/ruby_on_rails_creator.rb"
   },
   "venv_paths": {
     "spring": null,
-    "express.js": "creator/node_modules",
-    "flask": "creator/env",
-    "ruby-on-rails": "creator"
+    "express.js": "node_modules",
+    "flask": "env",
+    "ruby-on-rails": null
   }
 }

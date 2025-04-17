@@ -12,6 +12,7 @@
         "express": "^4.21.2",
         "http-proxy-middleware": "^3.0.5",
         "js-yaml": "^4.1.0",
+        "swagger-autogen": "^2.23.7",
         "swagger-ui-dist": "^5.20.8",
         "swagger-ui-express": "^5.0.1"
     },

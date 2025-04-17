@@ -525,6 +525,87 @@ app.post('/run-openapi-builder', (req, res) => {
   });
 });
 
+// API Endpoint to run openapi-builder.sh with specific framework index
+app.post('/api/run-builder', (req, res) => {
+  // Get basePath from query parameter
+  const basePath = req.query.basePath;
+  
+  if (!basePath) {
+    return res.status(400).json({ error: 'basePath parameter is required' });
+  }
+  
+  // Get framework index if provided
+  const frameworkIndex = req.query.frameworkIndex;
+  
+  const scriptPath = path.join(__dirname, 'openapi-builder.sh');
+  const configPath = path.join(basePath, 'swagger.config.json');
+  
+  // Build the command with optional framework index
+  let command = `sh "${scriptPath}" --config "${configPath}"`;
+  
+  // Add the build flag if frameworkIndex is provided
+  if (frameworkIndex) {
+    command += ` --build ${frameworkIndex}`;
+  }
+  
+  console.log(`Running command: ${command}`);
+  
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error running openapi-builder: ${error.message}`);
+      console.error(`stderr: ${stderr}`);
+      return res.status(500).json({ error: error.message, stderr });
+    }
+    
+    if (stderr) {
+      console.log(`OpenAPI builder stderr: ${stderr}`);
+    }
+    
+    console.log(`OpenAPI builder output: ${stdout}`);
+    res.json({ success: true, message: 'OpenAPI builder completed', output: stdout });
+  });
+});
+
+// API Endpoint to refresh a specific OpenAPI spec by framework index
+app.post('/api/refresh-openapi', (req, res) => {
+  // Get basePath from query parameter
+  const basePath = req.query.basePath;
+  
+  if (!basePath) {
+    return res.status(400).json({ error: 'basePath parameter is required' });
+  }
+  
+  // Get framework index (required for this endpoint)
+  const frameworkIndex = req.query.frameworkIndex;
+  
+  if (!frameworkIndex) {
+    return res.status(400).json({ error: 'frameworkIndex parameter is required' });
+  }
+  
+  const scriptPath = path.join(__dirname, 'openapi-builder.sh');
+  const configPath = path.join(basePath, 'swagger.config.json');
+  
+  // Build the command with the specific framework index
+  const command = `sh "${scriptPath}" --config "${configPath}" --build ${frameworkIndex}`;
+  
+  console.log(`Running refresh command: ${command}`);
+  
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error refreshing OpenAPI spec: ${error.message}`);
+      console.error(`stderr: ${stderr}`);
+      return res.status(500).json({ error: error.message, stderr });
+    }
+    
+    if (stderr) {
+      console.log(`OpenAPI refresh stderr: ${stderr}`);
+    }
+    
+    console.log(`OpenAPI refresh output: ${stdout}`);
+    res.json({ success: true, message: 'OpenAPI specification refreshed successfully', output: stdout });
+  });
+});
+
 // Endpoint to update the swagger.config.json file
 app.post('/update-config', (req, res) => {
   try {

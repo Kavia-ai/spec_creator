@@ -2,4 +2,4 @@ apispec>=4.0.0
 apispec-webframeworks>=0.5.2
 flask>=2.0.0
 marshmallow>=3.0.0
-pyyaml>=6.0
+pyyaml>=6.0 
