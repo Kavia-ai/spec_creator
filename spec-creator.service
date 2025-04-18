@@ -9,8 +9,8 @@ RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=spec-creator
-User=nobody
-Group=nobody
+User=root
+Group=root
 Environment=NODE_ENV=production
 Environment=PORT=9876
 WorkingDirectory=/root/spec_creator/specs
