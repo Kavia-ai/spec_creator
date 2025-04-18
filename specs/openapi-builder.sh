@@ -141,18 +141,40 @@ get_main_file() {
   echo "$json_obj" | grep -o '"main_file":"[^"]*"' | cut -d'"' -f4
 }
 
+# Function to extract default main file from spec_generator.config.json
+get_default_main_file() {
+  local framework=$1
+  # Look for the framework in the default_main_files object
+  if command -v jq >/dev/null 2>&1; then
+    jq -r ".default_main_files.\"$framework\"" "$SPEC_GEN_CONFIG" 2>/dev/null
+  else
+    # Fallback to grep/sed for systems without jq
+    cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"default_main_files\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
+  fi
+}
+
 # Function to extract spec generator from spec_generator.config.json
 get_spec_generator() {
   local framework=$1
   # Look for the framework in the spec_creator object
-  cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"spec_creator\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
+  if command -v jq >/dev/null 2>&1; then
+    jq -r ".spec_creator.\"$framework\"" "$SPEC_GEN_CONFIG" 2>/dev/null
+  else
+    # Fallback to grep/sed
+    cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"spec_creator\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
+  fi
 }
 
 # Function to extract virtual environment path from spec_generator.config.json
 get_venv_path() {
   local framework=$1
   # Look for the framework in the venv_paths object
-  cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"venv_paths\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
+  if command -v jq >/dev/null 2>&1; then
+    jq -r ".venv_paths.\"$framework\"" "$SPEC_GEN_CONFIG" 2>/dev/null
+  else
+    # Fallback to grep/sed
+    cat "$SPEC_GEN_CONFIG" | tr -d '\n' | grep -o "\"venv_paths\"[^}]*}" | grep -o "\"$framework\": *\"[^\"]*\"" | cut -d'"' -f4
+  fi
 }
 
 # Simple function to store framework and openapi path
@@ -174,6 +196,7 @@ process_framework() {
   local main_file=$(get_main_file "$framework")
   local generator=$(get_spec_generator "$framework")
   local venv_path=$(get_venv_path "$framework")
+  local default_main_file=$(get_default_main_file "$framework")
   
   if [ -z "$path" ]; then
     echo "❌ Path not found for $framework in $SWAGGER_CONFIG"
@@ -185,9 +208,15 @@ process_framework() {
     return
   fi
   
+  # If main_file is empty, use the default main file from config
   if [ -z "$main_file" ]; then
-    echo "❌ Main file not found for $framework in $SWAGGER_CONFIG"
-    return
+    if [ -n "$default_main_file" ] && [ "$default_main_file" != "null" ]; then
+      echo "Using default main file for $framework: $default_main_file"
+      main_file="$default_main_file"
+    else
+      echo "❌ Main file not found for $framework in $SWAGGER_CONFIG and no default provided"
+      return
+    fi
   fi
   
   # Store original directory
@@ -307,12 +336,12 @@ process_framework() {
             node "$GENERATOR_NAME" -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
           fi
         else
-          # For express.js, main file from config or fallback to server.js
+          # For express.js, use main file from config
           if [ -n "$main_file" ] && [ -f "$path/$main_file" ]; then
             node "$GENERATOR_NAME" -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
           else
-            # Default main file
-            node "$GENERATOR_NAME" -e "$path/server.js" -o "$OPENAPI_OUT_PATH"
+            echo "❌ Main file not found for Express.js app"
+            return
           fi
         fi
         ;;
@@ -370,9 +399,68 @@ process_framework() {
         if [ -n "$main_file" ] && [ -f "$path/$main_file" ]; then
           python3 "$GENERATOR_NAME" -e "$path/$main_file" -o "$OPENAPI_OUT_PATH"
         else
-          # Fallback to conventional file name
-          python3 "$GENERATOR_NAME" -e "$path/main_.py" -o "$OPENAPI_OUT_PATH"
+          echo "❌ Main file not found for Flask app"
+          return
         fi
+        
+        # Deactivate virtual environment if it was activated
+        if which deactivate >/dev/null 2>&1; then
+          deactivate
+        fi
+        ;;
+      "django")
+        # For Django, activate virtual environment if available
+        if [ -n "$venv_path" ] && [ "$venv_path" != "null" ]; then
+          # Check if it's a directory
+          if [ -d "$venv_path" ]; then
+            echo "Activating Python virtual environment: $venv_path"
+            if [ -f "$venv_path/bin/activate" ]; then
+              . "$venv_path/bin/activate"
+            else
+              echo "⚠️ Cannot find activate script in $venv_path/bin"
+              # Check if there are multiple environments (envs directory)
+              if [ -d "$venv_path/envs" ]; then
+                echo "Checking for environments in $venv_path/envs"
+                # Try to use the first environment found
+                for env_dir in "$venv_path/envs"/*; do
+                  if [ -d "$env_dir" ] && [ -f "$env_dir/bin/activate" ]; then
+                    echo "Found environment: $env_dir"
+                    . "$env_dir/bin/activate"
+                    break
+                  fi
+                done
+              fi
+            fi
+          elif [ -d "${venv_path}s" ]; then
+            # Try plural 'envs' if 'env' doesn't exist
+            echo "Environment directory $venv_path not found, trying ${venv_path}s"
+            for env_dir in "${venv_path}s"/*; do
+              if [ -d "$env_dir" ] && [ -f "$env_dir/bin/activate" ]; then
+                echo "Found environment: $env_dir"
+                . "$env_dir/bin/activate"
+                break
+              fi
+            done
+          else
+            # Try to find any Python environment
+            echo "⚠️ Virtual environment path $venv_path not found"
+            echo "Looking for Python environments in current directory..."
+            if [ -d "env" ] && [ -f "env/bin/activate" ]; then
+              echo "Found local env directory"
+              . "env/bin/activate"
+            elif [ -d "venv" ] && [ -f "venv/bin/activate" ]; then
+              echo "Found local venv directory"
+              . "venv/bin/activate"
+            elif [ -d ".venv" ] && [ -f ".venv/bin/activate" ]; then
+              echo "Found local .venv directory"
+              . ".venv/bin/activate"
+            fi
+          fi
+        fi
+        
+        # For Django, use the project root as the endpoint for the Django creator
+        # The main_file is not directly used but is needed for project identification
+        python3 "$GENERATOR_NAME" -e "$path" -o "$OPENAPI_OUT_PATH"
         
         # Deactivate virtual environment if it was activated
         if which deactivate >/dev/null 2>&1; then

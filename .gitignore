@@ -30,3 +30,26 @@ Thumbs.db
 *.swp
 *.swo
 env/
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+swagger.config.json
+openapi.json
+*.sqlite3

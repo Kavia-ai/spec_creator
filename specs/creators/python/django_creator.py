@@ -289,19 +289,115 @@ class DjangoModelVisitor(ast.NodeVisitor):
 
 
 def pluralize(word):
-    """Simple pluralization function for English words."""
+    """Convert singular to plural with better handling of English language rules."""
     if not word:
         return word
         
     word = word.lower()  # Ensure lowercase for consistency
     
-    # Special cases
+    # Special cases and irregular plurals
+    irregulars = {
+        'person': 'people',
+        'man': 'men',
+        'woman': 'women',
+        'child': 'children',
+        'foot': 'feet',
+        'tooth': 'teeth',
+        'goose': 'geese',
+        'mouse': 'mice',
+        'ox': 'oxen',
+        'leaf': 'leaves',
+        'life': 'lives',
+        'knife': 'knives',
+        'wife': 'wives',
+        'elf': 'elves',
+        'loaf': 'loaves',
+        'potato': 'potatoes',
+        'tomato': 'tomatoes',
+        'cactus': 'cacti',
+        'focus': 'foci',
+        'fungus': 'fungi',
+        'nucleus': 'nuclei',
+        'syllabus': 'syllabi',
+        'analysis': 'analyses',
+        'diagnosis': 'diagnoses',
+        'basis': 'bases',
+        'crisis': 'crises',
+        'thesis': 'theses',
+        'datum': 'data',
+        'medium': 'media',
+        'criterion': 'criteria',
+        'index': 'indices',
+        'matrix': 'matrices',
+        'vertex': 'vertices',
+        'alumnus': 'alumni',
+        'series': 'series',
+        'species': 'species',
+        'deer': 'deer',
+        'fish': 'fish',
+        'sheep': 'sheep',
+        'moose': 'moose',
+        'aircraft': 'aircraft',
+    }
+    
+    # Check for irregular plural
+    if word in irregulars:
+        return irregulars[word]
+    
+    # Words ending in -is change to -es
+    if word.endswith('is'):
+        return word[:-2] + 'es'
+    
+    # Words ending in -on change to -a
+    if word.endswith('on'):
+        return word[:-2] + 'a'
+    
+    # Words ending in -us change to -i
+    if word.endswith('us'):
+        return word[:-2] + 'i'
+    
+    # Words ending in -f or -fe change to -ves
+    if word.endswith('f'):
+        return word[:-1] + 'ves'
+    if word.endswith('fe'):
+        return word[:-2] + 'ves'
+    
+    # Words ending in -y change to -ies (if consonant before y)
     if word.endswith('y') and word[-2] not in 'aeiou':
         return word[:-1] + 'ies'
-    elif word.endswith(('s', 'x', 'z', 'ch', 'sh')):
+    
+    # Words ending in -o change to -oes (common cases)
+    if word.endswith('o') and word[-2] not in 'aeiou':
+        # Exceptions
+        if word in ['photo', 'piano', 'halo', 'studio', 'video', 'radio', 'solo']:
+            return word + 's'
         return word + 'es'
+    
+    # Words ending in -ex or -ix change to -ices
+    if word.endswith(('ex', 'ix')):
+        return word[:-2] + 'ices'
+    
+    # Words ending in -s, -ss, -sh, -ch, -x, -z change to -es
+    if word.endswith(('s', 'ss', 'sh', 'ch', 'x', 'z')):
+        return word + 'es'
+    
+    # Default: add s
+    return word + 's'
+
+
+def join_paths(base_path: str, sub_path: str) -> str:
+    """
+    Properly join two URL paths handling leading and trailing slashes correctly.
+    """
+    # Normalize paths to not have trailing slashes unless they're the root path
+    base_clean = base_path.rstrip('/') if base_path != '/' else '/'
+    sub_clean = sub_path.lstrip('/')
+    
+    # Join paths
+    if base_clean == '/':
+        return f"/{sub_clean}"
     else:
-        return word + 's'
+        return f"{base_clean}/{sub_clean}"
 
 
 def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
@@ -342,16 +438,35 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                 # Process each register call
                 for path, viewset in register_patterns:
                     print(f"  Router registration: {path} -> {viewset}")
+                    # Normalize path - ensure it has no trailing slash except for root
+                    normalized_path = path.rstrip('/') or '/'
+                    
+                    # Try to infer model name from ViewSet name
+                    model_name = None
+                    if viewset.endswith('ViewSet'):
+                        model_name = viewset[:-7]  # Remove 'ViewSet' suffix
+                    
+                    # Get a better path name using model name if available
+                    if model_name:
+                        # Convert to kebab-case pluralized endpoint
+                        endpoint = model_name_to_endpoint(model_name)
+                        # Use the explicit path from router.register if it looks meaningful
+                        # otherwise use our inferred endpoint name
+                        if path == '/' or path == '' or path == model_name.lower() or path == pluralize(model_name.lower()):
+                            better_path = f"api/{endpoint}"
+                            print(f"  Transforming generic path '{path}' to '{better_path}'")
+                            normalized_path = better_path
+                    
                     # Add list endpoint
                     router_patterns.append({
-                        'path': path,
+                        'path': normalized_path,
                         'view': viewset,
                         'name': f"{viewset}_list", 
                         'namespace': None
                     })
-                    # Add detail endpoint
+                    # Add detail endpoint with proper path joining
                     router_patterns.append({
-                        'path': f"{path}/{{pk}}",
+                        'path': join_paths(normalized_path, '{pk}'),
                         'view': viewset,
                         'name': f"{viewset}_detail",
                         'namespace': None
@@ -364,7 +479,9 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                     if viewset_name.endswith('ViewSet'):
                         # Extract model name from the ViewSet name
                         model_name = viewset_name.replace('ViewSet', '')
-                        endpoint = pluralize(model_name.lower())
+                        
+                        # Convert model name to kebab-case endpoint
+                        endpoint = model_name_to_endpoint(model_name)
                         
                         print(f"  Inferring router registration for {viewset_name} at api/{endpoint}")
                         # Add list endpoint
@@ -374,9 +491,9 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                             'name': f"{viewset_name}_list",
                             'namespace': None
                         })
-                        # Add detail endpoint
+                        # Add detail endpoint with proper path joining
                         router_patterns.append({
-                            'path': f"api/{endpoint}/{{pk}}",
+                            'path': join_paths(f"api/{endpoint}", '{pk}'),
                             'view': viewset_name,
                             'name': f"{viewset_name}_detail",
                             'namespace': None
@@ -394,6 +511,9 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                 print(f"  Found {len(register_patterns)} router registrations")
                 for path, viewset in register_patterns:
                     print(f"  Router registration: {path} -> {viewset}")
+                    
+                    # Normalize path - ensure it has no trailing slash except for root
+                    normalized_path = path.rstrip('/') or '/'
                     
                     # Try to determine viewset actions from imports or common patterns
                     custom_actions = []
@@ -431,15 +551,15 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                     # Create standard viewset routes
                     # Add list endpoint
                     router_patterns.append({
-                        'path': path,
+                        'path': normalized_path,
                         'view': viewset,
                         'name': f"{viewset}_list",
                         'namespace': None
                     })
                     
-                    # Add detail endpoint
+                    # Add detail endpoint with proper path joining
                     router_patterns.append({
-                        'path': f"{path}/{{pk}}",
+                        'path': join_paths(normalized_path, '{pk}'),
                         'view': viewset,
                         'name': f"{viewset}_detail",
                         'namespace': None
@@ -453,14 +573,14 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                         
                         if is_detail:
                             router_patterns.append({
-                                'path': f"{path}/{{pk}}/{action}",
+                                'path': join_paths(join_paths(normalized_path, '{pk}'), action),
                                 'view': viewset,
                                 'name': f"{viewset}_{action}",
                                 'namespace': None
                             })
                         else:
                             router_patterns.append({
-                                'path': f"{path}/{action}",
+                                'path': join_paths(normalized_path, action),
                                 'view': viewset,
                                 'name': f"{viewset}_{action}",
                                 'namespace': None
@@ -487,16 +607,9 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                     include_info = {'include': included_app}
                     included_patterns = process_included_urls(file_path, include_info)
                     if included_patterns:
-                        # Prepend the parent path to all included patterns
+                        # Prepend the parent path to all included patterns with proper path joining
                         for pattern in included_patterns:
-                            pattern_path = pattern['path']
-                            if path.endswith('/') and pattern_path.startswith('/'):
-                                combined_path = path + pattern_path[1:]
-                            elif path.endswith('/') or pattern_path.startswith('/'):
-                                combined_path = path + pattern_path
-                            else:
-                                combined_path = path + '/' + pattern_path
-                            pattern['path'] = combined_path
+                            pattern['path'] = join_paths(path, pattern['path'])
                         patterns.extend(included_patterns)
             else:
                 # Regular view pattern
@@ -528,9 +641,7 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                     included_patterns = process_included_urls(file_path, include_info)
                     if included_patterns:
                         for pattern in included_patterns:
-                            pattern_path = pattern['path']
-                            combined_path = path + pattern_path if path.endswith('/') or pattern_path.startswith('/') else path + '/' + pattern_path
-                            pattern['path'] = combined_path
+                            pattern['path'] = join_paths(path, pattern['path'])
                         patterns.extend(included_patterns)
             else:
                 view_name = view.strip()
@@ -563,9 +674,9 @@ def extract_urls_from_file(file_path: str) -> List[Dict[str, Any]]:
                             sub_patterns = extract_urls_from_file(api_urls_path)
                             if sub_patterns:
                                 print(f"  Found {len(sub_patterns)} nested API patterns")
-                                # Prefix all patterns with /api
+                                # Prefix all patterns with /api using proper path joining
                                 for pattern in sub_patterns:
-                                    pattern['path'] = 'api/' + pattern['path'].lstrip('/')
+                                    pattern['path'] = join_paths('api', pattern['path'].lstrip('/'))
                                 patterns.extend(sub_patterns)
                         except Exception as e:
                             print(f"  Error processing {api_urls_path}: {e}")
@@ -758,6 +869,20 @@ def find_views_file(project_root: str, view_name: str) -> Optional[str]:
     return None
 
 
+def model_name_to_endpoint(model_name):
+    """
+    Convert model name to appropriate RESTful endpoint name.
+    Example: UserProfile -> user-profiles
+    """
+    # Convert CamelCase to kebab-case first
+    # e.g. UserProfile -> user-profile
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', model_name)
+    kebab = re.sub('([a-z0-9])([A-Z])', r'\1-\2', s1).lower()
+    
+    # Then pluralize
+    return pluralize(kebab)
+
+
 def analyze_django_project(project_root: str) -> Dict[str, Any]:
     """Analyze a Django project to extract routes, views, and models."""
     project_data = {
@@ -906,7 +1031,7 @@ def analyze_django_project(project_root: str) -> Dict[str, Any]:
             print(f"   Extracted {len(views)} views from {file_path}")
             project_data['views'].update(views)
     
-    # Moved to the serializer handling section
+    # Helper function to add endpoints
     def add_endpoint_if_not_exists(path, view, name=None, namespace=None):
         """Helper to add an endpoint only if it doesn't already exist"""
         # Check if we already have this endpoint
@@ -962,21 +1087,20 @@ def analyze_django_project(project_root: str) -> Dict[str, Any]:
                         }
                     }
                     
-                    # Generate synthetic endpoints for this model
-                    model_endpoint = model.lower()
-                    plural_endpoint = pluralize(model_endpoint)
+                    # Generate synthetic endpoints for this model using kebab-case
+                    model_endpoint = model_name_to_endpoint(model)
                     
-                    print(f"   Adding synthetic endpoints for {model}: /api/{plural_endpoint}/")
+                    print(f"   Adding synthetic endpoints for {model}: /api/{model_endpoint}/")
                     # Add list/create endpoint
                     add_endpoint_if_not_exists(
-                        f"api/{plural_endpoint}/", 
+                        f"api/{model_endpoint}/", 
                         viewset_name,
                         f"{model.lower()}-list"
                     )
                     
                     # Add detail endpoint
                     add_endpoint_if_not_exists(
-                        f"api/{plural_endpoint}/{{id}}/", 
+                        f"api/{model_endpoint}/{{id}}/", 
                         viewset_name,
                         f"{model.lower()}-detail"
                     )
@@ -987,8 +1111,8 @@ def analyze_django_project(project_root: str) -> Dict[str, Any]:
     if not has_api_endpoints and project_data['models']:
         print(f"   Creating synthetic REST endpoints based on models (found {len(project_data['models'])} models)")
         for model_name in project_data['models']:
-            model_endpoint = model_name.lower()
-            plural_endpoint = pluralize(model_endpoint)
+            # Use kebab-case for endpoint names
+            model_endpoint = model_name_to_endpoint(model_name)
                 
             viewset_name = f"{model_name}ViewSet"
             if viewset_name not in project_data['views']:
@@ -1005,17 +1129,17 @@ def analyze_django_project(project_root: str) -> Dict[str, Any]:
                     }
                 }
             
-            print(f"   Adding synthetic endpoints for {model_name}: /api/{plural_endpoint}/")
+            print(f"   Adding synthetic endpoints for {model_name}: /api/{model_endpoint}/")
             # Add list/create endpoint
             add_endpoint_if_not_exists(
-                f"api/{plural_endpoint}/", 
+                f"api/{model_endpoint}/", 
                 viewset_name,
                 f"{model_name.lower()}-list"
             )
             
             # Add detail endpoint
             add_endpoint_if_not_exists(
-                f"api/{plural_endpoint}/{{id}}/", 
+                f"api/{model_endpoint}/{{id}}/", 
                 viewset_name,
                 f"{model_name.lower()}-detail"
             )
@@ -1030,21 +1154,28 @@ def analyze_django_project(project_root: str) -> Dict[str, Any]:
 
 def convert_django_path_to_openapi(path: str) -> str:
     """Convert Django-style URL pattern to OpenAPI path format."""
+    if not path:
+        return '/'
+        
+    # Normalize leading slash
+    if not path.startswith('/'):
+        path = '/' + path
+        
     # Replace Django-style path parameters with OpenAPI style
     # <int:pk> or <pk> to {pk}
     openapi_path = re.sub(r'<(?:[^:]+:)?([^>]+)>', r'{\1}', path)
     
-    # Handle regex patterns (simplified)
+    # Handle regex patterns like (?P<pk>\d+) to {pk}
     openapi_path = re.sub(r'\(\?P<([^>]+)>[^)]+\)', r'{\1}', openapi_path)
     
     # Remove trailing slashes for OpenAPI consistency
     if openapi_path.endswith('/') and len(openapi_path) > 1:
         openapi_path = openapi_path[:-1]
         
-    # Ensure path starts with /
-    if not openapi_path.startswith('/'):
-        openapi_path = '/' + openapi_path
-        
+    # Special case for proxy/django
+    if openapi_path == '/':
+        openapi_path = '/proxy/django'
+    
     return openapi_path
 
 
@@ -1407,8 +1538,9 @@ def generate_synthetic_endpoints(views_data, models_data, openapi_spec):
         if not model_name:
             continue
             
-        # Generate base path from model name (pluralized)
-        base_path = f"/api/{model_name.lower()}s"
+        # Generate base path from model name (kebab-case pluralized)
+        endpoint = model_name_to_endpoint(model_name)
+        base_path = f"/api/{endpoint}"
         
         # Check if this path already exists in the OpenAPI spec
         path_exists = False
@@ -1733,34 +1865,92 @@ def get_supported_methods_for_view(view_name, views_data):
 
 def generate_operation_id(method, path, view_name):
     """Generate a unique operationId for a path."""
-    # Remove any path parameters
-    clean_path = re.sub(r'[{}]', '', path)
-    
-    # Replace any special characters with underscores
-    clean_path = re.sub(r'[^a-zA-Z0-9]', '_', clean_path)
-    
-    # Trim multiple underscores
-    clean_path = re.sub(r'_+', '_', clean_path)
-    
-    # Create a base operation ID
-    if view_name:
-        # Extract the class name if view is like ViewClass.as_view()
-        view_class = view_name.split('.')[-1].replace('as_view()', '').replace('()', '')
+    if not view_name:
+        view_name = ""
         
-        # Remove 'ViewSet' suffix if present
-        if view_class.endswith('ViewSet'):
-            view_class = view_class[:-7]
-            
-        # Remove 'View' suffix if present
-        if view_class.endswith('View'):
-            view_class = view_class[:-4]
-            
-        operation_id = f"{method}_{view_class}_{clean_path}"
+    # Clean up the view name
+    # Extract the class name if view is like ViewClass.as_view()
+    view_match = re.search(r'(\w+)(?:\.as_view\(\)|$|\W)', view_name)
+    if view_match:
+        view_class = view_match.group(1)
     else:
-        operation_id = f"{method}_{clean_path}"
+        view_class = view_name
+        
+    # Remove common view-related suffixes
+    for suffix in ['ViewSet', 'View', 'APIView']:
+        if view_class.endswith(suffix):
+            view_class = view_class[:-len(suffix)]
+            break
     
-    # Ensure the operation ID is valid
-    operation_id = operation_id.strip('_').lower()
+    # Use snake_case for the view class name if it's in camelCase
+    # Convert UserProfile to user_profile
+    view_class = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', view_class).lower()
+    
+    # Clean up the path
+    # Remove any path parameters
+    clean_path = re.sub(r'\{[^}]+\}', '', path)
+    
+    # Convert to snake_case path segments
+    # e.g., /api/userProfile/items/ becomes api_user_profile_items
+    clean_path = clean_path.strip('/')
+    path_parts = clean_path.split('/')
+    clean_parts = []
+    
+    for part in path_parts:
+        # Skip empty parts
+        if not part:
+            continue
+            
+        # Convert camelCase to snake_case 
+        part = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', part).lower()
+        
+        # Replace special characters with underscores
+        part = re.sub(r'[^a-z0-9_]', '_', part)
+        
+        # Remove duplicate underscores
+        part = re.sub(r'_+', '_', part)
+        
+        # Remove leading and trailing underscores
+        part = part.strip('_')
+        
+        if part:
+            clean_parts.append(part)
+    
+    path_str = '_'.join(clean_parts)
+    
+    # Combine method, view_class, and path
+    parts = []
+    if method:
+        parts.append(method.lower())
+    if view_class:
+        parts.append(view_class)
+    if path_str:
+        parts.append(path_str)
+    
+    operation_id = '_'.join(filter(None, parts))
+    
+    # Make sure the ID doesn't start with a digit
+    if operation_id and operation_id[0].isdigit():
+        operation_id = 'op_' + operation_id
+    
+    # Make sure the ID isn't too long (max 64 characters)
+    if len(operation_id) > 64:
+        # Hash the path part to make it shorter
+        import hashlib
+        path_hash = hashlib.md5(path_str.encode()).hexdigest()[:8]
+        
+        # Use the first segment of the path
+        first_segment = clean_parts[0] if clean_parts else ""
+        
+        # Reconstruct with a shorter path component
+        parts_without_path = [p for p in parts if p != path_str]
+        short_id = '_'.join(filter(None, parts_without_path + [first_segment, path_hash]))
+        
+        if len(short_id) <= 64:
+            operation_id = short_id
+        else:
+            # Last resort: truncate
+            operation_id = operation_id[:64]
     
     return operation_id
 

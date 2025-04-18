@@ -360,38 +360,72 @@ check_frameworks() {
   fi
   
   # Check for Django
-  if [ -z "$framework" ] && [ -f "$DIR/manage.py" ] && ! should_ignore "$DIR/manage.py" "$DIR"; then
+  if [ -z "$framework" ]; then
     DJANGO_FOUND=0
-    for file in $(find "$DIR" -maxdepth 1 -name "*.py" -not -path "*/\.*" -type f); do
-      if ! should_ignore "$file" "$DIR"; then
-        if grep -q "django" "$file"; then
-          DJANGO_FOUND=1
-          break
-        fi
-      fi
-    done
+    MANAGE_PY_FILE=""
     
-    if [ "$DJANGO_FOUND" -eq 1 ]; then
-      language="python"
-      framework="django"
-      # For Django, check if there's a settings file with INSTALLED_APPS
-      DJANGO_SETTINGS=""
-      for file in $(find "$DIR" -name "settings.py" -not -path "*/\.*" -type f); do
-        if ! should_ignore "$file" "$DIR"; then
-          if grep -q "INSTALLED_APPS" "$file"; then
-            DJANGO_SETTINGS="$file"
+    # First check for manage.py in the current directory
+    if [ -f "$DIR/manage.py" ] && ! should_ignore "$DIR/manage.py" "$DIR"; then
+      MANAGE_PY_FILE="$DIR/manage.py"
+    else
+      # If not found at the root, look for it in immediate subdirectories
+      for subdir in "$DIR"/*/; do
+        if [ -d "$subdir" ] && ! should_ignore "$subdir" "$DIR"; then
+          if [ -f "${subdir}manage.py" ] && ! should_ignore "${subdir}manage.py" "$DIR"; then
+            MANAGE_PY_FILE="${subdir}manage.py"
             break
           fi
         fi
       done
-      
-      if [ -n "$DJANGO_SETTINGS" ]; then
-        main_file=$(basename "$(dirname "$DJANGO_SETTINGS")")/settings.py
+    fi
+    
+    # If manage.py is found anywhere, check it for Django patterns
+    if [ -n "$MANAGE_PY_FILE" ]; then
+      # Check manage.py content for Django indicators
+      if grep -q "DJANGO_SETTINGS_MODULE\|django\.core" "$MANAGE_PY_FILE"; then
+        DJANGO_FOUND=1
       else
-        # Django main file is usually manage.py
-        if [ -f "$DIR/manage.py" ]; then
-          main_file="manage.py"
+        # Look for settings.py with Django imports
+        DJANGO_DIR=$(dirname "$MANAGE_PY_FILE")
+        for file in $(find "$DJANGO_DIR" -name "settings.py" -not -path "*/\.*" -type f); do
+          if ! should_ignore "$file" "$DIR"; then
+            if grep -q "django\.contrib\|INSTALLED_APPS\|MIDDLEWARE" "$file"; then
+              DJANGO_FOUND=1
+              break
+            fi
+          fi
+        done
+        
+        # If still not found, check for urls.py with Django imports
+        if [ "$DJANGO_FOUND" -eq 0 ]; then
+          for file in $(find "$DJANGO_DIR" -name "urls.py" -not -path "*/\.*" -type f); do
+            if ! should_ignore "$file" "$DIR"; then
+              if grep -q "django\.urls\|from django" "$file"; then
+                DJANGO_FOUND=1
+                break
+              fi
+            fi
+          done
         fi
+      fi
+      
+      if [ "$DJANGO_FOUND" -eq 1 ]; then
+        language="python"
+        framework="django"
+        
+        # Set main file to the manage.py we found
+        main_file=$(echo "$MANAGE_PY_FILE" | sed "s|^$DIR/||")
+        
+        # Get the project settings file
+        DJANGO_SETTINGS=""
+        for file in $(find "$DJANGO_DIR" -name "settings.py" -not -path "*/\.*" -type f); do
+          if ! should_ignore "$file" "$DIR"; then
+            if grep -q "INSTALLED_APPS" "$file"; then
+              DJANGO_SETTINGS="$file"
+              break
+            fi
+          fi
+        done
       fi
     fi
   fi

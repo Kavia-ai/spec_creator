@@ -3,12 +3,14 @@
     "spring": null,
     "express.js": "creators/node/expressjs_creator.js",
     "flask": "creators/python/flask_creator.py",
-    "ruby-on-rails": "creators/rails/ruby_on_rails_creator.rb"
+    "ruby-on-rails": "creators/rails/ruby_on_rails_creator.rb",
+    "django": "creators/python/django_creator.py"
   },
   "venv_paths": {
     "spring": null,
     "express.js": "node_modules",
     "flask": "env",
-    "ruby-on-rails": null
+    "ruby-on-rails": null,
+    "django": "env"
   }
 }
