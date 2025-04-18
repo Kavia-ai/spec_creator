@@ -8,7 +8,7 @@ Restart=on-failure
 RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=swagger-openapi
+SyslogIdentifier=spec-creator
 User=nobody
 Group=nobody
 Environment=NODE_ENV=production
