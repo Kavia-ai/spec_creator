@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Build OpenAPI Specifications for all frameworks defined in swagger.config.json
 # using generators defined in spec_generator.config.json
