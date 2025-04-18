@@ -1522,6 +1522,33 @@
       border-top-color: var(--primary-color);
       animation: spin 0.8s linear infinite;
     }
+
+    /* Header selector for project dropdown */
+    .header-selector-container {
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+      min-width: 180px;
+      max-width: 250px;
+    }
+    
+    .header-selector-container select {
+      padding: 5px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      background-color: #f8fafc;
+      color: var(--text-color);
+      cursor: pointer;
+      width: 100%;
+      height: 36px;
+    }
+    
+    body.dark-mode .header-selector-container select {
+      background-color: #2a2a2a;
+      color: #e2e8f0;
+      border-color: #334155;
+    }
   </style>
 </head>
 <body>
@@ -1533,8 +1560,13 @@
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
           Project Configuration and Tools
-          <span class="accordion-toggle"></span>
+          <span class="accordion-toggle" style="margin-left: 10px; position: relative;"></span>
           <div class="header-icon-buttons">
+            <div class="header-selector-container">
+              <select id="header-framework-selector">
+                <option value="" disabled selected>Select Project</option>
+              </select>
+            </div>
             <button id="run-detector-button" class="header-icon-button" aria-label="Run Framework Detector">
               <i class="fa fa-cubes" aria-hidden="true"></i>
               <span class="tooltip">Run Framework Detector</span>
@@ -1576,7 +1608,7 @@
       </div>
       
           <div class="selector-container" id="framework-selector-container">
-            <label for="framework-selector" class="form-label">Select Project:</label>
+            <label for="framework-selector" class="form-label">Select Project: <small style="font-weight: normal; opacity: 0.7;">(also available in header)</small></label>
             <div style="display: flex; align-items: center;">
               <select id="framework-selector" style="flex-grow: 1;">
                 <option value="" disabled selected>Loading APIs...</option>
@@ -1977,6 +2009,7 @@
       setupThemeToggle();
       setupAccordion();
       fetchBasePath();
+      setupProjectSelectors();
       
       // Initialize button event listeners to stop propagation
       document.querySelectorAll('.header-icon-button, .theme-toggle').forEach(button => {
@@ -2039,103 +2072,184 @@
         // Hide loading if no frameworks were found
         hideGlobalLoading();
       }
-      
-      // FRAMEWORK SELECTOR - Single clean event handler
-      document.getElementById('framework-selector').addEventListener('change', function() {
-        updateSelectedOption();
-        const filePath = this.value;
-        const selectedIndex = this.options[this.selectedIndex].dataset.index;
-        currentConfigIndex = selectedIndex !== undefined ? parseInt(selectedIndex) : -1;
-        
-        console.log('Selected framework path:', filePath, 'Config index:', currentConfigIndex);
-        
-        updateProjectDetails(currentConfigIndex);
-        
-        // Reset the Swagger UI container
-        document.getElementById('swagger-ui').innerHTML = '';
-        const swaggerContainer = document.getElementById('swagger-container');
-        swaggerContainer.style.display = 'block';
-        
-        // Only load spec if we have a path
-        if (filePath) {
-          loadSpec(filePath);
-        } else {
-          // Hide container if no spec to display
-          swaggerContainer.style.display = 'none';
-        }
-      });
-      
-      // CLEAN EVENT HANDLERS - no duplicates
-      document.getElementById('edit-config-button').addEventListener('click', function() {
-        if (currentConfigIndex >= 0) {
-          openConfigPanel(currentConfigIndex);
-        } else {
-          showError('Please select a framework first.');
-        }
-      });
-      
-      document.getElementById('close-config').addEventListener('click', closeConfigPanel);
-      document.getElementById('save-config').addEventListener('click', saveConfig);
-      document.getElementById('overlay').addEventListener('click', closeConfigPanel);
-      
-      document.getElementById('run-detector-button').addEventListener('click', function() {
-        runFrameworkDetector();
-      });
-      
-      document.getElementById('run-builder-button').addEventListener('click', function() {
-        runOpenAPIBuilder();
-      });
-      
-      // REFRESH BUTTON - Single clean event handler
-      document.getElementById('refresh-button').addEventListener('click', function() {
-        const frameworkSelect = document.getElementById('framework-selector');
-        const selectedFramework = frameworkSelect.selectedIndex;
-        
-        if (selectedFramework <= 0) {
-          showError('Please select a framework first');
-          return;
-        }
-        
-        // Show loading
-        this.classList.add('loading');
-        document.getElementById('refresh-loading').style.display = 'flex';
-        
-        const frameworkIndex = selectedFramework;
-        const basePath = getUrlParameter('basePath');
-        
-        // Call the API to refresh OpenAPI
-        fetch(`/api/refresh-openapi?frameworkIndex=${frameworkIndex}&basePath=${encodeURIComponent(basePath)}`, {
-          method: 'POST'
-        })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          // Hide loading
-          this.classList.remove('loading');
-          document.getElementById('refresh-loading').style.display = 'none';
-          
-          showSuccess(data.message || 'OpenAPI specification refreshed successfully');
-          
-          // Reload frameworks then restore selection
-          loadFrameworks().then(() => {
-            if (frameworkSelect.options.length > selectedFramework) {
-              frameworkSelect.selectedIndex = selectedFramework;
-              frameworkSelect.dispatchEvent(new Event('change'));
-            }
-          });
-        })
-        .catch(error => {
-          // Hide loading
-          this.classList.remove('loading');
-          document.getElementById('refresh-loading').style.display = 'none';
-          showError('Error refreshing OpenAPI specification: ' + error.message);
-        });
-      });
     };
+    
+    // Function to set up project selector synchronization
+    function setupProjectSelectors() {
+      const mainSelector = document.getElementById('framework-selector');
+      const headerSelector = document.getElementById('header-framework-selector');
+      
+      // Prevent the accordion from toggling when clicking the header selector
+      headerSelector.addEventListener('click', function(event) {
+        event.stopPropagation();
+      });
+      
+      // Also prevent propagation for the header selector container
+      const headerSelectorContainer = document.querySelector('.header-selector-container');
+      if (headerSelectorContainer) {
+        headerSelectorContainer.addEventListener('click', function(event) {
+          event.stopPropagation();
+        });
+      }
+      
+      // Sync from main to header
+      mainSelector.addEventListener('change', function() {
+        // Update header selector to match
+        const selectedIndex = this.selectedIndex;
+        const selectedValue = this.value;
+        
+        // Ensure options are copied from main to header
+        syncSelectOptions(mainSelector, headerSelector);
+        
+        // Set the same selected index
+        if (headerSelector.options.length > selectedIndex) {
+          headerSelector.selectedIndex = selectedIndex;
+        }
+      });
+      
+      // Sync from header to main
+      headerSelector.addEventListener('change', function() {
+        const selectedValue = this.value;
+        const selectedOption = this.options[this.selectedIndex];
+        
+        // Find matching option in main selector
+        for (let i = 0; i < mainSelector.options.length; i++) {
+          if (mainSelector.options[i].value === selectedValue) {
+            mainSelector.selectedIndex = i;
+            mainSelector.dispatchEvent(new Event('change'));
+            break;
+          }
+        }
+      });
+      
+      // Initial sync of options
+      syncSelectOptions(mainSelector, headerSelector);
+    }
+    
+    // Helper function to sync options between selects
+    function syncSelectOptions(source, target) {
+      // Save current selection
+      const currentValue = target.value;
+      
+      // Clear existing options
+      target.innerHTML = '';
+      
+      // Copy options from source to target
+      Array.from(source.options).forEach(option => {
+        const newOption = document.createElement('option');
+        newOption.value = option.value;
+        newOption.text = option.text;
+        newOption.disabled = option.disabled;
+        newOption.dataset.index = option.dataset.index;
+        target.appendChild(newOption);
+      });
+      
+      // Restore selection if possible
+      if (currentValue) {
+        for (let i = 0; i < target.options.length; i++) {
+          if (target.options[i].value === currentValue) {
+            target.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+    
+    // FRAMEWORK SELECTOR - Single clean event handler
+    document.getElementById('framework-selector').addEventListener('change', function() {
+      updateSelectedOption();
+      const filePath = this.value;
+      const selectedIndex = this.options[this.selectedIndex].dataset.index;
+      currentConfigIndex = selectedIndex !== undefined ? parseInt(selectedIndex) : -1;
+      
+      console.log('Selected framework path:', filePath, 'Config index:', currentConfigIndex);
+      
+      updateProjectDetails(currentConfigIndex);
+      
+      // Reset the Swagger UI container
+      document.getElementById('swagger-ui').innerHTML = '';
+      const swaggerContainer = document.getElementById('swagger-container');
+      swaggerContainer.style.display = 'block';
+      
+      // Only load spec if we have a path
+      if (filePath) {
+        loadSpec(filePath);
+      } else {
+        // Hide container if no spec to display
+        swaggerContainer.style.display = 'none';
+      }
+    });
+    
+    // CLEAN EVENT HANDLERS - no duplicates
+    document.getElementById('edit-config-button').addEventListener('click', function() {
+      if (currentConfigIndex >= 0) {
+        openConfigPanel(currentConfigIndex);
+      } else {
+        showError('Please select a framework first.');
+      }
+    });
+    
+    document.getElementById('close-config').addEventListener('click', closeConfigPanel);
+    document.getElementById('save-config').addEventListener('click', saveConfig);
+    document.getElementById('overlay').addEventListener('click', closeConfigPanel);
+    
+    document.getElementById('run-detector-button').addEventListener('click', function() {
+      runFrameworkDetector();
+    });
+    
+    document.getElementById('run-builder-button').addEventListener('click', function() {
+      runOpenAPIBuilder();
+    });
+    
+    // REFRESH BUTTON - Single clean event handler
+    document.getElementById('refresh-button').addEventListener('click', function() {
+      const frameworkSelect = document.getElementById('framework-selector');
+      const selectedFramework = frameworkSelect.selectedIndex;
+      
+      if (selectedFramework <= 0) {
+        showError('Please select a framework first');
+        return;
+      }
+      
+      // Show loading
+      this.classList.add('loading');
+      document.getElementById('refresh-loading').style.display = 'flex';
+      
+      const frameworkIndex = selectedFramework;
+      const basePath = getUrlParameter('basePath');
+      
+      // Call the API to refresh OpenAPI
+      fetch(`/api/refresh-openapi?frameworkIndex=${frameworkIndex}&basePath=${encodeURIComponent(basePath)}`, {
+        method: 'POST'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Hide loading
+        this.classList.remove('loading');
+        document.getElementById('refresh-loading').style.display = 'none';
+        
+        showSuccess(data.message || 'OpenAPI specification refreshed successfully');
+        
+        // Reload frameworks then restore selection
+        loadFrameworks().then(() => {
+          if (frameworkSelect.options.length > selectedFramework) {
+            frameworkSelect.selectedIndex = selectedFramework;
+            frameworkSelect.dispatchEvent(new Event('change'));
+          }
+        });
+      })
+      .catch(error => {
+        // Hide loading
+        this.classList.remove('loading');
+        document.getElementById('refresh-loading').style.display = 'none';
+        showError('Error refreshing OpenAPI specification: ' + error.message);
+      });
+    });
     
     async function fetchBasePath() {
       try {
@@ -2440,7 +2554,9 @@
       const accordionHeader = document.getElementById('main-accordion-header');
       const accordionContent = document.getElementById('main-accordion-content');
       
-      accordionContent.style.display = 'block';
+      // Start with accordion closed by default
+      accordionContent.style.display = 'none';
+      accordionHeader.classList.add('collapsed');
       
       accordionHeader.addEventListener('click', function(event) {
         // Don't toggle accordion if clicking on buttons in the header
