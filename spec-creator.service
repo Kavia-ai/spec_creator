@@ -1,0 +1,19 @@
+[Unit]
+Description=Swagger OpenAPI UI Server
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /root/spec_creator/specs/app.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=swagger-openapi
+User=nobody
+Group=nobody
+Environment=NODE_ENV=production
+Environment=PORT=9876
+WorkingDirectory=/root/spec_creator/specs
+
+[Install]
+WantedBy=multi-user.target 
