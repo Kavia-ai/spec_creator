@@ -505,7 +505,7 @@ app.post('/run-openapi-builder', (req, res) => {
   
   const scriptPath = path.join(__dirname, 'openapi-builder.sh');
   const configPath = path.join(basePath, 'swagger.config.json');
-  const command = `sh "${scriptPath}" --config "${configPath}"`;
+  const command = `bash "${scriptPath}" --config "${configPath}"`;
   
   console.log(`Running command: ${command}`);
   
@@ -541,7 +541,7 @@ app.post('/api/run-builder', (req, res) => {
   const configPath = path.join(basePath, 'swagger.config.json');
   
   // Build the command with optional framework index
-  let command = `sh "${scriptPath}" --config "${configPath}"`;
+  let command = `bash "${scriptPath}" --config "${configPath}"`;
   
   // Add the build flag if frameworkIndex is provided
   if (frameworkIndex) {
@@ -586,7 +586,7 @@ app.post('/api/refresh-openapi', (req, res) => {
   const configPath = path.join(basePath, 'swagger.config.json');
   
   // Build the command with the specific framework index
-  const command = `sh "${scriptPath}" --config "${configPath}" --build ${frameworkIndex}`;
+  const command = `bash "${scriptPath}" --config "${configPath}" --build ${frameworkIndex}`;
   
   console.log(`Running refresh command: ${command}`);
   
