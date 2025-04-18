@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kavia Swagger View</title>
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.18.3/swagger-ui.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   <style>
     :root {
       --primary-color: #f97316; /* Changed from blue to orange */
@@ -694,29 +695,24 @@
     }
     
     #run-detector-button {
-      background-color: var(--primary-color);
-      padding-left: 3rem;
+      /* Remove all specific styling to allow inheritance */
     }
     
     #run-detector-button::before {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M3 10h18v4H3v-4zm2-4h14v2H5V6zm14 12H5v-2h14v2z'/%3E%3C/svg%3E");
+      display: none; /* Remove the ::before elements that are causing the layout issues */
     }
     
     #run-builder-button {
-      background-color: var(--primary-color);
-      padding-left: 3rem;
+      /* Remove all specific styling to allow inheritance */
     }
     
     #run-builder-button::before {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20.083 15.2l1.202.721a.5.5 0 0 1 0 .858l-8.77 5.262a1 1 0 0 1-1.03 0l-8.77-5.262a.5.5 0 0 1 0-.858l1.202-.721L12 20.05l8.083-4.85zm0-4.7l1.202.721a.5.5 0 0 1 0 .858L12 17.85l-9.285-5.571a.5.5 0 0 1 0-.858l1.202-.721L12 15.35l8.083-4.85zm-7.569-9.191l8.771 5.262a.5.5 0 0 1 0 .858L12 13 2.715 7.429a.5.5 0 0 1 0-.858l8.77-5.262a1 1 0 0 1 1.03 0zM12 3.332L5.887 7 12 10.668 18.113 7 12 3.332z'/%3E%3C/svg%3E");
+      display: none; /* Remove the ::before elements that are causing the layout issues */
     }
     
-    body.dark-mode #run-detector-button {
-      background-color: var(--primary-dark);
-    }
-    
+    body.dark-mode #run-detector-button,
     body.dark-mode #run-builder-button {
-      background-color: var(--primary-dark);
+      /* dark mode styling will inherit from the general header-icon-button styling */
     }
     
     /* Adjustments for loading indicators within buttons */
@@ -1363,6 +1359,169 @@
     }
     
     /* End of improvements */
+
+    .accordion-header .form-title {
+      margin-bottom: 0;
+      padding: 0.75rem 1rem;
+      border-bottom: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .accordion-icon {
+      color: var(--primary-color);
+    }
+    
+    .accordion-toggle {
+      margin-left: auto;
+      width: 20px;
+      height: 20px;
+      position: relative;
+    }
+    
+    /* Header icon buttons */
+    .header-icon-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+      margin-right: 12px;
+    }
+    
+    /* Make ALL header buttons consistent */
+    .header-icon-button,
+    .theme-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background-color: #f0f0f0;
+      color: var(--primary-color);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    /* Consistent styling for all button icons */
+    .header-icon-button i.fa,
+    .theme-toggle svg {
+      font-size: 16px;
+      color: var(--primary-color);
+    }
+    
+    /* Hover effects */
+    .header-icon-button:hover,
+    .theme-toggle:hover {
+      background-color: #e0e0e0;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Dark mode styling */
+    body.dark-mode .header-icon-button,
+    body.dark-mode .theme-toggle {
+      background-color: #2a2a2a;
+      color: #60a5fa;
+    }
+    
+    body.dark-mode .header-icon-button i.fa,
+    body.dark-mode .theme-toggle svg {
+      color: #60a5fa;
+    }
+    
+    body.dark-mode .header-icon-button:hover,
+    body.dark-mode .theme-toggle:hover {
+      background-color: #333333;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Tooltips */
+    .header-icon-button .tooltip {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+    
+    .header-icon-button:hover .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    /* Loading states */
+    .header-icon-button.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    
+    .header-icon-button.loading i.fa {
+      opacity: 0;
+    }
+    
+    .header-icon-button.loading::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 0.8s linear infinite;
+    }
+    
+    body.dark-mode .header-icon-button.loading::after {
+      border-top-color: #60a5fa;
+    }
+    
+    /* Tools section */
+    .tools-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-color);
+      font-weight: 500;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.25rem;
+      background-color: rgba(249, 115, 22, 0.08);
+      font-size: 0.85rem;
+    }
+    
+    body.dark-mode .loading {
+      background-color: rgba(96, 165, 250, 0.15);
+    }
+    
+    .loading-spinner {
+      min-width: 1rem;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(249, 115, 22, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 0.8s linear infinite;
+    }
   </style>
 </head>
 <body>
@@ -1375,7 +1534,21 @@
           </svg>
           Project Configuration and Tools
           <span class="accordion-toggle"></span>
-          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" style="margin-right: 10px;">
+          <div class="header-icon-buttons">
+            <button id="run-detector-button" class="header-icon-button" aria-label="Run Framework Detector">
+              <i class="fa fa-cubes" aria-hidden="true"></i>
+              <span class="tooltip">Run Framework Detector</span>
+            </button>
+            <button id="run-builder-button" class="header-icon-button" aria-label="Run OpenAPI Builder">
+              <i class="fa fa-file-code-o" aria-hidden="true"></i>
+              <span class="tooltip">Run OpenAPI Builder</span>
+            </button>
+            <button id="refresh-button" class="header-icon-button" aria-label="Refresh OpenAPI Specs">
+              <i class="fa fa-refresh" aria-hidden="true"></i>
+              <span class="tooltip">Refresh OpenAPI Specs</span>
+            </button>
+          </div>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
           <svg class="dark-mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
@@ -1479,55 +1652,19 @@
         <span>Loading specification...</span>
       </div>
       
-          <h3 class="section-title">Tools</h3>
-      <div class="script-buttons tools-section">
-            <div class="button-wrapper">
-        <button id="run-detector-button" class="action-button">
-          Run Framework Detector
-          <div class="button-loader">
-            <div class="pulse-spinner">
-              <div class="pulse-dot"></div>
-              <div class="pulse-dot"></div>
-              <div class="pulse-dot"></div>
+          <h3 class="section-title">Loading Status</h3>
+      <div class="tools-section">
+            <div class="loading" id="detector-loading" style="display: none;">
+              <div class="loading-spinner"></div>
+              <span>Running framework detector...</span>
             </div>
-          </div>
-        </button>
-              <div class="loading" id="detector-loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <span>Running framework detector...</span>
-              </div>
+            <div class="loading" id="builder-loading" style="display: none;">
+              <div class="loading-spinner"></div>
+              <span>Generating OpenAPI specs...</span>
             </div>
-            <div class="button-wrapper">
-        <button id="run-builder-button" class="action-button">
-          Run OpenAPI Builder
-          <div class="button-loader">
-            <div class="pulse-spinner">
-              <div class="pulse-dot"></div>
-              <div class="pulse-dot"></div>
-              <div class="pulse-dot"></div>
-            </div>
-          </div>
-        </button>
-              <div class="loading" id="builder-loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <span>Generating OpenAPI specs...</span>
-              </div>
-            </div>
-            <div class="button-wrapper">
-        <button id="refresh-button" class="action-button">
-          Refresh OpenAPI Specs
-          <div class="button-loader">
-            <div class="pulse-spinner">
-              <div class="pulse-dot"></div>
-              <div class="pulse-dot"></div>
-              <div class="pulse-dot"></div>
-            </div>
-          </div>
-        </button>
-              <div class="loading" id="refresh-loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <span>Refreshing OpenAPI specs...</span>
-              </div>
+            <div class="loading" id="refresh-loading" style="display: none;">
+              <div class="loading-spinner"></div>
+              <span>Refreshing OpenAPI specs...</span>
             </div>
           </div>
         </div>
@@ -1841,6 +1978,13 @@
       setupAccordion();
       fetchBasePath();
       
+      // Initialize button event listeners to stop propagation
+      document.querySelectorAll('.header-icon-button, .theme-toggle').forEach(button => {
+        button.addEventListener('click', function(event) {
+          event.stopPropagation();
+        });
+      });
+      
       // Show global loading
       showGlobalLoading();
       
@@ -2013,6 +2157,7 @@
         const detectorBtn = document.getElementById('run-detector-button');
         if (detectorBtn) detectorBtn.classList.add('loading');
         
+        document.getElementById('detector-loading').style.display = 'flex';
         updateLoadingStep('step-detect', 'active');
         hideNotifications();
         
@@ -2034,6 +2179,7 @@
         const data = await response.json();
         
         if (detectorBtn) detectorBtn.classList.remove('loading');
+        document.getElementById('detector-loading').style.display = 'none';
         showSuccess('Framework detection completed successfully.');
         updateLoadingStep('step-detect', 'completed');
         
@@ -2042,6 +2188,7 @@
         console.error('Error running detector:', error);
         const detectorBtn = document.getElementById('run-detector-button');
         if (detectorBtn) detectorBtn.classList.remove('loading');
+        document.getElementById('detector-loading').style.display = 'none';
         
         showError(`Failed to run framework detector. ${error.message}`);
         updateLoadingStep('step-detect', 'idle');
@@ -2054,6 +2201,7 @@
         const builderBtn = document.getElementById('run-builder-button');
         if (builderBtn) builderBtn.classList.add('loading');
         
+        document.getElementById('builder-loading').style.display = 'flex';
         updateLoadingStep('step-build', 'active');
         hideNotifications();
         
@@ -2075,6 +2223,7 @@
         const data = await response.json();
         
         if (builderBtn) builderBtn.classList.remove('loading');
+        document.getElementById('builder-loading').style.display = 'none';
         showSuccess('OpenAPI specifications generated successfully.');
         updateLoadingStep('step-build', 'completed');
         
@@ -2083,6 +2232,7 @@
         console.error('Error running builder:', error);
         const builderBtn = document.getElementById('run-builder-button');
         if (builderBtn) builderBtn.classList.remove('loading');
+        document.getElementById('builder-loading').style.display = 'none';
         
         showError(`Failed to generate OpenAPI specifications. ${error.message}`);
         updateLoadingStep('step-build', 'idle');
@@ -2292,7 +2442,12 @@
       
       accordionContent.style.display = 'block';
       
-      accordionHeader.addEventListener('click', function() {
+      accordionHeader.addEventListener('click', function(event) {
+        // Don't toggle accordion if clicking on buttons in the header
+        if (event.target.closest('.header-icon-button') || event.target.closest('.theme-toggle')) {
+          return;
+        }
+        
         const isCollapsed = this.classList.contains('collapsed');
         
         if (isCollapsed) {
@@ -2302,6 +2457,13 @@
           accordionContent.style.display = 'none';
           this.classList.add('collapsed');
         }
+      });
+      
+      // Add event listeners that stop propagation for header buttons
+      document.querySelectorAll('.header-icon-button, .theme-toggle').forEach(button => {
+        button.addEventListener('click', function(event) {
+          event.stopPropagation();
+        });
       });
     }
     
