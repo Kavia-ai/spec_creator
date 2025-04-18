@@ -3,7 +3,7 @@ Description=Swagger OpenAPI UI Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /root/spec_creator/specs/app.js
+ExecStart=/root/.nvm/versions/node/v18.19.1/bin/node /root/spec_creator/specs/app.js
 Restart=on-failure
 RestartSec=10
 StandardOutput=syslog
